@@ -1,0 +1,44 @@
+name: Unzip Uploaded Archive
+
+on:
+  push:
+    paths:
+      - 'uploads/*.zip'          # ← change this if you use a different folder
+  workflow_dispatch:             # allows you to run it manually for testing
+
+permissions:
+  contents: write
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Find and unzip the archive
+        run: |
+          cd $GITHUB_WORKSPACE
+          
+          # Find the first .zip file in the uploads folder
+          ZIP_FILE=$(find uploads -name "*.zip" -print -quit)
+          
+          if [ -z "$ZIP_FILE" ]; then
+            echo "No .zip file found in uploads/"
+            exit 0
+          fi
+          
+          echo "Extracting $ZIP_FILE ..."
+          unzip -o "$ZIP_FILE" -d .          # -o = overwrite existing files
+          
+          echo "Removing the ZIP file ..."
+          rm "$ZIP_FILE"
+          
+          # Optional: remove the now-empty uploads/ folder
+          rmdir uploads 2>/dev/null || true
+          
+      - name: Commit extracted files and delete ZIP
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Unzip archive + remove .zip"
+          branch: ${{ github.ref_name }}
