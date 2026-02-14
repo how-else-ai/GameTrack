@@ -1,0 +1,15 @@
+name: Unzip uploaded archive
+on:
+  push:
+    paths: '**.zip'
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unzip
+        run: |
+          unzip uploads/*.zip -d .
+          rm -rf uploads
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v5
