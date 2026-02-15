@@ -14,6 +14,7 @@ A retro-styled gaming time management application for parents to track and contr
 - [Architecture](#architecture)
 - [Core Functionality](#core-functionality)
 - [Cross-Device Sync](#cross-device-sync)
+- [Privacy & Data Storage](#privacy--data-storage)
 - [Data Model](#data-model)
 - [UI/UX Design](#uiux-design)
 - [Project Structure](#project-structure)
@@ -30,6 +31,21 @@ Game Time Tracker helps parents manage their children's gaming time through a fu
 - **Automatic Daily Reset**: Tickets reset at midnight each day
 - **Cross-Device Sync**: Pair multiple devices (phones, tablets) to sync data in real-time
 - **Retro Gaming Aesthetic**: 8-bit pixel art style with nostalgic design elements
+
+### 🔒 Privacy & Data Storage
+
+**This app does NOT save any data about your children/kids.**
+
+All data (kids, tickets, timers, sessions) is stored **locally on your device only** using browser `localStorage`.
+
+- ❌ No server-side database stores your children's information
+- ❌ No cloud backup or data collection
+- ❌ No analytics or tracking of your usage
+- ✅ Data stays on your device unless you choose to sync with paired devices
+- ✅ Cross-device sync uses a neutral relay server that only forwards data between your paired devices
+- ✅ Clear data at any time by clearing your browser's local storage
+
+Your children's data is private and remains under your control.
 
 ## ✨ Key Features
 
@@ -82,15 +98,15 @@ Game Time Tracker helps parents manage their children's gaming time through a fu
 - **qrcode** - QR code generation
 - **Fetch API** - HTTP requests to sync server
 
-### Database (Scaffold)
-- **Prisma** - Type-safe ORM (currently configured for SQLite)
-- **Note**: Current implementation uses localStorage; database features are scaffold-ready
+### Data Persistence
+- **Browser localStorage** - All data stored locally on device
+- **No server-side database** - Privacy-first design
 
 ## 🏗 Architecture
 
 ### State Management Architecture
 
-The application uses a centralized Zustand store (`src/lib/store.ts`) as the single source of truth:
+The application uses a centralized Zustand store (`src/lib/store.ts`) as the single source of truth. **All data is persisted locally using browser localStorage**:
 
 ```
 ┌─────────────────────────────────────┐
@@ -108,6 +124,8 @@ The application uses a centralized Zustand store (`src/lib/store.ts`) as the sin
         ┌───────────────┐
         │  localStorage │
         │  (persist)    │
+        │               │
+        │  🔒 LOCAL ONLY│
         └───────────────┘
 ```
 
@@ -206,9 +224,11 @@ kids.forEach(kid => {
 
 ## 🔄 Cross-Device Sync
 
+**Important:** The sync server acts only as a neutral relay. It does NOT store your data - it simply forwards messages between your paired devices.
+
 ### Sync Architecture
 
-The sync system uses a **polling-based HTTP mechanism** with a central server:
+The sync system uses a **polling-based HTTP mechanism** with a neutral relay server:
 
 ```
 Device A                     Sync Server                    Device B
@@ -422,9 +442,6 @@ game-time-tracker/
 │   │   └── ...
 │   └── logo.svg
 │
-├── prisma/
-│   └── schema.prisma            # Database schema (scaffold)
-│
 ├── docs/
 │   └── SYNC_SYSTEM.md           # Sync system documentation
 │
@@ -477,21 +494,6 @@ bun run build
 bun start
 ```
 
-### Database (Optional)
-
-The app currently uses localStorage for persistence. To enable database features:
-
-```bash
-# Generate Prisma client
-bun run db:generate
-
-# Push schema to database
-bun run db:push
-
-# Or create a migration
-bun run db:migrate
-```
-
 ## 🔧 Development
 
 ### Available Scripts
@@ -506,12 +508,6 @@ bun start                # Start production server
 
 # Linting
 bun run lint             # Run ESLint
-
-# Database
-bun run db:push          # Push schema to database
-bun run db:generate      # Generate Prisma client
-bun run db:migrate       # Create and apply migration
-bun run db:reset         # Reset database
 ```
 
 ### Key Development Concepts
