@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   keywords: ["Game Time", "Kids", "Timer", "Tickets", "Gaming"],
   authors: [{ name: "Game Time Tracker" }],
   icons: {
-    icon: "/logo.svg",
+    icon: "/logo.png",
   },
 };
 

@@ -143,9 +143,9 @@ export default function Home() {
       <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b-4 border-border">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img 
-              src="/logo.svg" 
-              alt="Game Time Tracker" 
+            <img
+              src="/logo.png"
+              alt="Game Time Tracker"
               className="w-10 h-10"
             />
             <div>
