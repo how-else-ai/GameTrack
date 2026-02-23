@@ -21,6 +21,7 @@ A retro-styled gaming time management application for parents to track and contr
 - [Getting Started](#getting-started)
 - [Development](#development)
 - [Deployment](#deployment)
+- [Documentation](#documentation)
 
 ## 🎯 Overview
 
@@ -60,6 +61,13 @@ Your children's data is private and remains under your control.
 - **Pause/Resume**: Pause sessions without losing progress
 - **Warning Indicators**: Visual and audio alerts when time is running low
 - **Auto-End**: Sessions automatically end when time expires with audio notification
+
+⚠️ **Important Notification Limitations:**
+- **iOS**: Notifications & alarms only work when Safari is the active app (not when device is locked or Safari is in background)
+- **Android**: Notifications work when browser is in background, but not when device is locked
+- **Desktop**: Notifications work reliably when browser is running
+
+> See [`docs/NOTIFICATION_LIMITATIONS.md`](docs/NOTIFICATION_LIMITATIONS.md) for detailed information and solutions for background notifications.
 
 ### Cross-Device Synchronization
 - **QR Code Pairing**: Easy device pairing via QR code scanning
@@ -574,6 +582,11 @@ export const SYNC_SERVER_URL = 'https://sync.how-else.com/sync.php';
 ## 📝 License
 
 See [LICENSE](LICENSE) file for details.
+
+## 📚 Documentation
+
+- **[Notification System Limitations](docs/NOTIFICATION_LIMITATIONS.md)** - Detailed explanation of platform-specific notification limitations and solutions for background/standby notifications
+- **[Sync System](docs/SYNC_SYSTEM.md)** - Cross-device synchronization architecture and API documentation
 
 ## 🤝 Contributing
 
