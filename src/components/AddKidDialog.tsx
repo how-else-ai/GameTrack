@@ -15,6 +15,25 @@ import {
 } from '@/components/ui/dialog';
 import { getAllAvatars, getCategories, getCategoryName, AvatarCategory, AvatarInfo, legacyEmojiToAvatar } from '@/lib/avatar';
 
+const DURATION_OPTIONS = [5, 10, 15, 20, 30, 45, 60, 90, 120];
+
+function formatDuration(minutes: number): string {
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+  const hours = minutes / 60;
+  return hours === 1 ? '1h' : `${hours}h`;
+}
+
+function findClosestDuration(minutes: number): number {
+  if (DURATION_OPTIONS.includes(minutes)) {
+    return minutes;
+  }
+  return DURATION_OPTIONS.reduce((prev, curr) =>
+    Math.abs(curr - minutes) < Math.abs(prev - minutes) ? curr : prev
+  );
+}
+
 interface AddKidDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -42,7 +61,7 @@ export function AddKidDialog({ open, onOpenChange, onSubmit, editKid }: AddKidDi
           // Editing existing kid - prefill all values
           setName(editKid.name);
           setTicketLimit(editKid.ticketLimit);
-          setTicketDuration(editKid.ticketDuration);
+          setTicketDuration(findClosestDuration(editKid.ticketDuration));
           
           // Handle avatar - check if it's a new avatar ID or legacy emoji
           const avatar = allAvatars.find(a => a.id === editKid.avatarEmoji);
@@ -181,16 +200,23 @@ export function AddKidDialog({ open, onOpenChange, onSubmit, editKid }: AddKidDi
           <div className="space-y-2">
             <div className="flex justify-between">
               <Label className="font-pixel text-[10px] uppercase text-primary">Minutes per ticket</Label>
-              <span className="font-pixel text-[10px] text-primary">{ticketDuration} min</span>
+              <span className="font-pixel text-[10px] text-primary">{formatDuration(ticketDuration)}</span>
             </div>
             <Slider
-              value={[ticketDuration]}
-              onValueChange={(v) => setTicketDuration(v[0])}
-              min={15}
-              max={120}
-              step={15}
+              value={[DURATION_OPTIONS.indexOf(ticketDuration)]}
+              onValueChange={(v) => setTicketDuration(DURATION_OPTIONS[v[0]])}
+              min={0}
+              max={DURATION_OPTIONS.length - 1}
+              step={1}
               className="w-full"
             />
+            <div className="flex justify-between px-1">
+              {DURATION_OPTIONS.map((d, i) => (
+                <span key={i} className="font-pixel text-[6px] text-muted-foreground">
+                  {formatDuration(d)}
+                </span>
+              ))}
+            </div>
           </div>
 
           {/* Submit */}
