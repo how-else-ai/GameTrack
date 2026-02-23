@@ -3,6 +3,11 @@
 
 export type NotificationPermission = 'granted' | 'denied' | 'default';
 
+// Extended NotificationOptions that includes vibrate (not in standard DOM types)
+interface ExtendedNotificationOptions extends NotificationOptions {
+  vibrate?: number[];
+}
+
 class NotificationService {
   private permission: NotificationPermission = 'default';
 
@@ -46,7 +51,7 @@ class NotificationService {
   }
 
   // Send a notification
-  async send(title: string, options?: NotificationOptions): Promise<boolean> {
+  async send(title: string, options?: ExtendedNotificationOptions): Promise<boolean> {
     if (!this.isSupported()) {
       console.warn('[NOTIFICATIONS] Not supported in this browser');
       return false;
