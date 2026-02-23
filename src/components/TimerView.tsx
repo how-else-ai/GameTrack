@@ -87,7 +87,7 @@ export function TimerView({ kid, onBack }: TimerViewProps) {
     }
   }, []);
 
-  // Check notification permission on mount
+  // Check notification permission on mount and detect iOS
   useEffect(() => {
     const checkPermission = () => {
       const permission = notificationService.getPermission();
@@ -95,6 +95,11 @@ export function TimerView({ kid, onBack }: TimerViewProps) {
     };
     checkPermission();
   }, []);
+
+  // iOS warning for notifications
+  const isIOS = () => {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent);
+  };
 
   // Handle timer expiration and notifications
   useEffect(() => {
@@ -187,11 +192,17 @@ export function TimerView({ kid, onBack }: TimerViewProps) {
             size="icon"
             onClick={handleToggleNotifications}
             className={`ml-auto border-2 ${
-              notificationsEnabled 
-                ? 'border-[var(--retro-cyan)] text-[var(--retro-cyan)]' 
+              notificationsEnabled
+                ? 'border-[var(--retro-cyan)] text-[var(--retro-cyan)]'
                 : 'border-transparent hover:border-primary'
             }`}
-            title={notificationsEnabled ? 'Notifications enabled' : 'Enable notifications'}
+            title={
+              isIOS() && notificationsEnabled
+                ? '⚠️ iOS: Notifications only work when Safari is open'
+                : notificationsEnabled
+                ? 'Notifications enabled'
+                : 'Enable notifications'
+            }
           >
             {notificationsEnabled ? (
               <Bell className="h-5 w-5" />
@@ -260,6 +271,19 @@ export function TimerView({ kid, onBack }: TimerViewProps) {
               >
                 1 minute remaining!
               </motion.p>
+            )}
+
+            {/* iOS Notification Warning */}
+            {isIOS() && notificationsEnabled && hasActiveSession && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 p-3 bg-yellow-500/10 border-2 border-yellow-500/50 rounded-lg"
+              >
+                <p className="font-pixel text-[8px] text-yellow-600 text-center uppercase">
+                  ⚠️ iOS Alert: Notifications & alarms won't work if device locks or Safari closes.
+                </p>
+              </motion.div>
             )}
           </motion.div>
         ) : (

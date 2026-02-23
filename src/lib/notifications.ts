@@ -1,7 +1,22 @@
 // Notification utility for timer alerts
-// Uses the browser's Notification API which works on mobile when the browser is open
+// Uses the browser's Notification API
+//
+// LIMITATIONS:
+// - iOS (iPhone/iPad): Only works when Safari is the ACTIVE app. Does NOT work when device is locked or Safari is in background.
+// - Android: Works when browser is in background, but not when device is locked.
+// - Desktop: Works reliably when browser is running.
+//
+// NOTE: To send notifications when device is locked/standby, you would need:
+// - Native iOS app with Apple Push Notification Service (APNs), OR
+// - PWA with Web Push API + push notification service (Firebase, OneSignal, etc.)
+//   - Even with PWA, iOS has very limited background notification support
 
 export type NotificationPermission = 'granted' | 'denied' | 'default';
+
+// Extended NotificationOptions that includes vibrate (not in standard DOM types)
+interface ExtendedNotificationOptions extends NotificationOptions {
+  vibrate?: number[];
+}
 
 class NotificationService {
   private permission: NotificationPermission = 'default';
@@ -46,7 +61,7 @@ class NotificationService {
   }
 
   // Send a notification
-  async send(title: string, options?: NotificationOptions): Promise<boolean> {
+  async send(title: string, options?: ExtendedNotificationOptions): Promise<boolean> {
     if (!this.isSupported()) {
       console.warn('[NOTIFICATIONS] Not supported in this browser');
       return false;
