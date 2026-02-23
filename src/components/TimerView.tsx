@@ -9,11 +9,14 @@ import {
   Pause,
   Square,
   ArrowLeft,
+  Bell,
+  BellOff,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 import { getAvatarUrl } from '@/lib/avatar';
 import { timerManager, useTimer } from '@/lib/timer';
+import { notificationService } from '@/lib/notifications';
 
 interface TimerViewProps {
   kid: Kid;
@@ -33,6 +36,10 @@ export function TimerView({ kid, onBack }: TimerViewProps) {
   
   // Alarm reference to prevent multiple plays
   const alarmPlayedRef = useRef(false);
+  // Warning notification reference
+  const warningNotifiedRef = useRef(false);
+  // Notification permission state
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
   const totalTime = kid.ticketDuration * 60;
   const progress = hasActiveSession && remainingTime !== null 
@@ -80,24 +87,55 @@ export function TimerView({ kid, onBack }: TimerViewProps) {
     }
   }, []);
 
-  // Handle timer expiration
+  // Check notification permission on mount
   useEffect(() => {
+    const checkPermission = () => {
+      const permission = notificationService.getPermission();
+      setNotificationsEnabled(permission === 'granted');
+    };
+    checkPermission();
+  }, []);
+
+  // Handle timer expiration and notifications
+  useEffect(() => {
+    // Timer expired - play alarm and send notification
     if (remainingTime === 0 && !alarmPlayedRef.current) {
       alarmPlayedRef.current = true;
       playAlarm();
+      // Send push notification when timer expires
+      notificationService.notifyTimerExpired(kid.name);
+    }
+    
+    // Warning at 1 minute - send notification (only once per session)
+    if (isWarning && !warningNotifiedRef.current && !isPaused && hasActiveSession) {
+      warningNotifiedRef.current = true;
+      notificationService.notifyTimerWarning(kid.name);
     }
     
     // Reset alarm flag when session changes
     if (!hasActiveSession) {
       alarmPlayedRef.current = false;
+      warningNotifiedRef.current = false;
     }
-  }, [remainingTime, hasActiveSession, playAlarm]);
+  }, [remainingTime, hasActiveSession, playAlarm, isWarning, isPaused, kid.name]);
+
+  // Request notification permission
+  const handleToggleNotifications = useCallback(async () => {
+    if (notificationsEnabled) {
+      // Permission already granted, nothing to do
+      return;
+    }
+    
+    const permission = await notificationService.requestPermission();
+    setNotificationsEnabled(permission === 'granted');
+  }, [notificationsEnabled]);
 
   // Start timer
   const handleStart = useCallback((ticketId: string) => {
     timerManager.clearExpiredNotification(kid.id);
     startSession(kid.id, ticketId);
     alarmPlayedRef.current = false;
+    warningNotifiedRef.current = false;
   }, [kid.id, startSession]);
 
   // Pause timer
@@ -143,6 +181,24 @@ export function TimerView({ kid, onBack }: TimerViewProps) {
               </p>
             </div>
           </div>
+          {/* Notification Toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleToggleNotifications}
+            className={`ml-auto border-2 ${
+              notificationsEnabled 
+                ? 'border-[var(--retro-cyan)] text-[var(--retro-cyan)]' 
+                : 'border-transparent hover:border-primary'
+            }`}
+            title={notificationsEnabled ? 'Notifications enabled' : 'Enable notifications'}
+          >
+            {notificationsEnabled ? (
+              <Bell className="h-5 w-5" />
+            ) : (
+              <BellOff className="h-5 w-5" />
+            )}
+          </Button>
         </div>
       </header>
 
