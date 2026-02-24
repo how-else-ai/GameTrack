@@ -41,3 +41,16 @@ server.log
 
 # bun
 bun.lockb
+
+# expo
+.expo
+.expo-shared
+web-build
+
+# iOS/Android build artifacts
+**/ios/Pods
+**/ios/build
+**/ios/DerivedData
+**/android/.gradle
+**/android/build
+**/android/app/build
