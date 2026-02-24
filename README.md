@@ -5,6 +5,10 @@ A retro-styled gaming time management application for parents to track and contr
 ![Game Time Tracker](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8?style=for-the-badge&logo=tailwind-css)
+![Expo](https://img.shields.io/badge/Expo-52.0-000020?style=for-the-badge&logo=expo)
+![iOS](https://img.shields.io/badge/iOS-16+-000000?style=for-the-badge&logo=ios)
+
+> **Now available as a Web App and native iOS App!** The iOS app provides reliable timer notifications even when the app is closed. See [iOS Expo Plan](./docs/IOS_EXPO_PLAN.md) for details.
 
 ## 📋 Table of Contents
 
@@ -409,46 +413,92 @@ The app features a nostalgic 1980s arcade aesthetic:
 
 ## 📁 Project Structure
 
+This is a monorepo containing both the web app and iOS mobile app:
+
 ```
 game-time-tracker/
-├── src/
-│   ├── app/                     # Next.js App Router
-│   │   ├── layout.tsx           # Root layout with fonts
-│   │   ├── page.tsx             # Main page (kids list + timer)
-│   │   └── globals.css          # Tailwind + custom styles
+├── apps/
+│   ├── mobile/                  # 📱 iOS Expo App
+│   │   ├── src/
+│   │   │   ├── app/             # Expo Router screens
+│   │   │   ├── hooks/           # RN hooks (useSync, useTimer, useNotifications)
+│   │   │   └── lib/             # Notifications, storage, store
+│   │   ├── app.config.ts        # iOS/Android configuration
+│   │   ├── eas.json             # EAS build configuration
+│   │   └── package.json
 │   │
-│   ├── components/               # React components
-│   │   ├── KidCard.tsx          # Kid list item with timer preview
-│   │   ├── TimerView.tsx        # Full-screen timer view
-│   │   ├── AddKidDialog.tsx     # Add/edit kid form
-│   │   ├── SyncManager.tsx      # Device pairing UI
-│   │   └── ui/                  # shadcn/ui components
-│   │
-│   ├── hooks/                   # Custom React hooks
-│   │   └── useSync.ts           # Sync logic & polling
-│   │
-│   └── lib/                     # Core logic & utilities
-│       ├── store.ts             # Zustand state management
-│       ├── types.ts             # TypeScript interfaces
-│       ├── timer.ts             # Global timer manager
-│       ├── avatar.ts            # Avatar system
-│       ├── sync-config.ts       # Sync server URL
-│       └── device.ts            # Device ID generation
+│   └── web/                     # 🌐 Next.js Web App (existing)
+│       └── src/
+│           ├── app/             # Next.js App Router
+│           ├── components/      # React components
+│           ├── hooks/           # Web hooks
+│           └── lib/             # Core logic
 │
-├── public/                      # Static assets
-│   ├── avatars/                 # 20 pixel art avatar PNGs
-│   │   ├── alien-1.png
-│   │   ├── kid-1.png
-│   │   └── ...
-│   └── logo.svg
+├── packages/
+│   └── core/                    # 📦 Shared domain logic
+│       ├── src/
+│       │   ├── types.ts         # Shared TypeScript types
+│       │   ├── store.ts         # Platform-agnostic Zustand store
+│       │   ├── sync-client.ts   # Reusable sync logic
+│       │   ├── timer-utils.ts   # Timer calculations
+│       │   └── ...
+│       └── package.json
 │
 ├── docs/
+│   ├── IOS_EXPO_PLAN.md         # iOS implementation plan
+│   ├── IPAD_TESTING_GUIDE.md    # Testing on physical iPad
 │   └── SYNC_SYSTEM.md           # Sync system documentation
 │
-├── package.json                 # Dependencies
-├── next.config.ts              # Next.js configuration
-├── tailwind.config.ts          # Tailwind configuration
-└── tsconfig.json               # TypeScript configuration
+├── package.json                 # Root monorepo configuration
+└── ...
+```
+
+### Web App (Next.js)
+```
+src/
+├── app/                     # Next.js App Router
+│   ├── layout.tsx           # Root layout with fonts
+│   ├── page.tsx             # Main page (kids list + timer)
+│   └── globals.css          # Tailwind + custom styles
+│
+├── components/               # React components
+│   ├── KidCard.tsx          # Kid list item with timer preview
+│   ├── TimerView.tsx        # Full-screen timer view
+│   ├── AddKidDialog.tsx     # Add/edit kid form
+│   ├── SyncManager.tsx      # Device pairing UI
+│   └── ui/                  # shadcn/ui components
+│
+├── hooks/                   # Custom React hooks
+│   └── useSync.ts           # Sync logic & polling
+│
+└── lib/                     # Core logic & utilities
+    ├── store.ts             # Zustand state management
+    ├── types.ts             # TypeScript interfaces
+    ├── timer.ts             # Global timer manager
+    ├── avatar.ts            # Avatar system
+    ├── sync-config.ts       # Sync server URL
+    └── device.ts            # Device ID generation
+```
+
+### iOS App (Expo)
+```
+apps/mobile/src/
+├── app/                     # Expo Router screens
+│   ├── _layout.tsx          # Root layout with providers
+│   ├── index.tsx            # Kids list screen
+│   ├── timer/[kidId].tsx    # Timer screen
+│   ├── add-kid.tsx          # Add kid form
+│   └── sync.tsx             # Device pairing
+│
+├── hooks/                   # React Native hooks
+│   ├── useSync.ts           # Sync functionality
+│   ├── useTimer.ts          # Timer state
+│   └── useNotifications.ts  # iOS notification management
+│
+└── lib/                     # Utilities
+    ├── notifications.ts     # expo-notifications integration
+    ├── storage.ts           # AsyncStorage adapter
+    └── store.ts             # Zustand store instance
 ```
 
 ## 🚀 Getting Started
@@ -475,6 +525,7 @@ npm install
 
 ### Development
 
+#### Web App
 ```bash
 # Start development server
 bun run dev
@@ -484,8 +535,39 @@ npm run dev
 # Open http://localhost:3000
 ```
 
+#### iOS Mobile App
+```bash
+# Install all dependencies (including mobile)
+bun run install:all
+
+# Start the mobile app
+bun run dev:mobile
+# or
+cd apps/mobile && expo start
+
+# In the terminal, press:
+# - 'i' to open iOS Simulator
+# - 'a' to open Android emulator
+# - 'w' to open web version
+```
+
+#### Testing on Physical iPad/iPhone
+See the [iPad Testing Guide](./docs/IPAD_TESTING_GUIDE.md) for detailed instructions on testing the app on your physical device.
+
+Quick build for your device:
+```bash
+cd apps/mobile
+
+# Build for internal testing (TestFlight)
+eas build --platform ios --profile preview
+
+# Or development build for local install
+eas build --platform ios --profile development
+```
+
 ### Building for Production
 
+#### Web App
 ```bash
 # Build the application
 bun run build
@@ -494,20 +576,41 @@ bun run build
 bun start
 ```
 
+#### iOS App
+```bash
+cd apps/mobile
+
+# Build for App Store
+eas build --platform ios --profile production
+
+# Submit to App Store
+eas submit --platform ios
+```
+
 ## 🔧 Development
 
 ### Available Scripts
 
 ```bash
 # Development
-bun run dev              # Start dev server on port 3000
+bun run dev              # Start web dev server on port 3000
+bun run dev:mobile       # Start mobile app (expo start)
 
 # Build & Production
-bun run build            # Build for production
+bun run build            # Build web app for production
+bun run build:core       # Build shared core package
 bun start                # Start production server
 
-# Linting
+# Mobile (requires cd apps/mobile)
+eas build --platform ios --profile preview    # Build for TestFlight
+eas build --platform ios --profile production # Build for App Store
+
+# Linting & Type Checking
 bun run lint             # Run ESLint
+bun run typecheck        # Run TypeScript checks on all packages
+
+# Installation
+bun run install:all      # Install dependencies for all packages
 ```
 
 ### Key Development Concepts

@@ -79,10 +79,12 @@ game-time-tracker/
 2. ✅ Event IDs and debouncing behavior match web logic via `SyncClient` class.
 3. ✅ Network error handling and offline state UI in sync screen.
 
-### Phase 5: QA + Release Readiness 🔄 PENDING
-1. ⏳ Manual verification on real iOS devices (foreground/background/terminated scenarios).
-2. ⏳ Add EAS build configuration for ad-hoc TestFlight and production release.
-3. ✅ Documented iOS-specific behavior in this file.
+### Phase 5: QA + Release Readiness 🔄 IN PROGRESS
+1. 🔄 Manual verification on real iOS devices (foreground/background/terminated scenarios).
+   - See [iPad Testing Guide](./IPAD_TESTING_GUIDE.md) for detailed testing instructions
+2. ✅ EAS build configuration for ad-hoc TestFlight and production release.
+   - Created `eas.json` with development, preview, and production profiles
+3. ✅ Documented iOS-specific behavior in this file and testing guide.
 
 ## Running the Mobile App
 
@@ -109,12 +111,30 @@ expo start
 
 Press `i` to open iOS Simulator.
 
+### Testing on Physical iPad/iPhone
+
+For detailed instructions on testing the app on your iPad, see the [iPad Testing Guide](./IPAD_TESTING_GUIDE.md).
+
+Quick start:
+```bash
+cd apps/mobile
+
+# Build for your device (requires Apple Developer account)
+eas build --platform ios --profile preview
+
+# Or development build for local testing
+eas build --platform ios --profile development
+```
+
 ### Building for Production
 ```bash
 cd apps/mobile
 
 # Build for TestFlight
-eas build --platform ios
+eas build --platform ios --profile production
+
+# Submit to App Store
+eas submit --platform ios
 
 # Or local build
 expo prebuild
