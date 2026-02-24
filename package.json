@@ -1,16 +1,24 @@
 {
-  "name": "nextjs_tailwind_shadcn_ts",
+  "name": "game-time-tracker",
   "version": "0.2.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
+    "dev:mobile": "cd apps/mobile && expo start",
     "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
+    "build:core": "cd packages/core && bun run build",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit && cd apps/mobile && tsc --noEmit",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:reset": "prisma migrate reset"
+    "db:reset": "prisma migrate reset",
+    "install:all": "bun install && cd packages/core && bun install && cd ../../apps/mobile && bun install"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
