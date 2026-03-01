@@ -3,7 +3,7 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Game Time Tracker',
-  slug: 'game-time-tracker',
+  slug: 'game-tracker',
   version: '0.1.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
@@ -64,7 +64,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       origin: false,
     },
     eas: {
-      projectId: 'game-time-tracker',
+      projectId: '94fdcec4-e978-4005-8fc3-f5e0d3ba6fa8',
     },
   },
 });
