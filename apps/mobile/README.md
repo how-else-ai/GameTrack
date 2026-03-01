@@ -52,7 +52,7 @@ apps/mobile/
 
 - Node.js 18+ or Bun
 - iOS Simulator (macOS only) or physical iOS device
-- Expo CLI (optional): `npm install -g expo-cli`
+- Expo CLI is included locally in the project
 
 ### Installation
 
@@ -86,7 +86,7 @@ bun run dev:mobile
 
 # Or from mobile directory
 cd apps/mobile
-expo start
+npx expo start
 ```
 
 Press `i` to open iOS Simulator.
@@ -171,7 +171,7 @@ eas build --platform ios --profile simulator
 cd apps/mobile
 
 # Generate native project
-expo prebuild
+npx expo prebuild
 
 # Install pods
 cd ios && pod install && cd ..
