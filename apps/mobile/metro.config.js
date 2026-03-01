@@ -8,16 +8,15 @@ const workspaceRoot = path.resolve(projectRoot, '../..');
 
 const config = getDefaultConfig(projectRoot);
 
-// 1. Watch all files within the monorepo
-config.watchFolders = [workspaceRoot];
+// Monorepo setup: Watch the workspace root in addition to project root
+// Merge with Expo's defaults rather than replacing
+const defaultWatchFolders = config.watchFolders || [];
+config.watchFolders = [...defaultWatchFolders, workspaceRoot];
 
-// 2. Let Metro know where to resolve packages and in what order
+// Let Metro know where to resolve packages
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
   path.resolve(workspaceRoot, 'node_modules'),
 ];
-
-// 3. Force Metro to resolve (sub)dependencies only from the monorepo root
-config.resolver.disableHierarchicalLookup = true;
 
 module.exports = config;

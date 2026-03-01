@@ -19,11 +19,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: true,
     bundleIdentifier: 'com.gametimetracker.app',
     infoPlist: {
-      // Notification permissions
       NSUserNotificationsUsageDescription: 'Game Time Tracker needs to send notifications when your gaming session ends, even when the app is closed.',
-      // Camera permissions for QR pairing
       NSCameraUsageDescription: 'Game Time Tracker uses the camera to scan QR codes for pairing devices together.',
-      // Background modes for sync
       UIBackgroundModes: ['fetch', 'remote-notification'],
     },
   },
@@ -45,12 +42,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     'expo-router',
+    'expo-font',
     [
       'expo-notifications',
       {
         icon: './assets/notification-icon.png',
         color: '#ffea00',
-        sounds: ['./assets/notification-sound.wav'],
       },
     ],
     [

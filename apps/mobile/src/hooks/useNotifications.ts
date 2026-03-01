@@ -9,7 +9,6 @@ import {
   requestNotificationPermissions,
 } from '@/lib/notifications';
 import { useAppStore } from '@/lib/store';
-import { endSession } from '@game-time-tracker/core';
 
 export function useNotifications() {
   const kids = useAppStore((state) => state.kids);

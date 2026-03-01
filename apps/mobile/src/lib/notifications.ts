@@ -10,6 +10,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -170,9 +172,9 @@ export async function getScheduledTimerNotifications(): Promise<Notifications.No
  */
 export function setupNotificationHandlers(
   onTimerComplete: (kidId: string) => void
-): void {
+): () => void {
   // Handle notification when app is in foreground
-  Notifications.addNotificationReceivedListener(notification => {
+  const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
     const data = notification.request.content.data as { kidId?: string; type?: string } | undefined;
 
     if (data?.type === 'TIMER_COMPLETE' && data?.kidId) {
@@ -182,7 +184,7 @@ export function setupNotificationHandlers(
   });
 
   // Handle notification when user taps it
-  Notifications.addNotificationResponseReceivedListener(response => {
+  const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
     const data = response.notification.request.content.data as { kidId?: string; type?: string } | undefined;
 
     if (data?.type === 'TIMER_COMPLETE' && data?.kidId) {
@@ -190,6 +192,11 @@ export function setupNotificationHandlers(
       onTimerComplete(data.kidId);
     }
   });
+
+  return () => {
+    foregroundSubscription.remove();
+    responseSubscription.remove();
+  };
 }
 
 /**
