@@ -13,7 +13,7 @@ Bring the existing Game Time Tracker to a native iOS app using Expo so the timer
 - **Notifications:** Schedule a local notification at `session.endAt` and cancel/reschedule on pause/resume/end.
 - **Background behavior:** Rely on iOS local notification scheduling (not background timers) so the notification fires even if the app is closed.
 - **Syncing:** Port the existing polling sync to React Native using `fetch` and a background-safe interval while app is active.
-- **QR pairing:** Use `expo-barcode-scanner` or `expo-camera` for QR scanning.
+- **QR pairing:** Use `expo-camera` for QR scanning (expo-barcode-scanner is now integrated into expo-camera in SDK 55).
 - **Navigation/UI:** Use Expo Router with a stack-based UI tailored to iOS.
 
 ## Project Structure
