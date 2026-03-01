@@ -1,8 +1,12 @@
-# Placeholder for assets
-# Add the following files:
-# - icon.png (1024x1024 app icon)
-# - splash.png (1242x2436 splash screen)
-# - adaptive-icon.png (1024x1024 Android adaptive icon)
-# - favicon.png (48x48 favicon)
-# - notification-icon.png (96x96 notification icon)
-# - notification-sound.wav (notification sound)
+# Game Time Tracker Assets
+# These are placeholder assets - replace with production-ready designs
+
+# Current assets (placeholders):
+# - icon.png (1024x1024 app icon) - placeholder
+# - splash.png (1242x2436 splash screen) - placeholder  
+# - adaptive-icon.png (1024x1024 Android adaptive icon) - placeholder
+# - favicon.png (48x48 favicon) - placeholder
+# - notification-icon.png (96x96 notification icon) - placeholder
+
+# Note: notification-sound.wav removed (expo-av deprecated in SDK 55)
+# Using default system notification sound instead

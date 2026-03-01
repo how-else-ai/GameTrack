@@ -51,7 +51,7 @@ export function getRandomAvatar(): string {
 
 export function getAvatarCategory(avatarId: string): string | null {
   for (const [category, avatars] of Object.entries(AVATAR_CATEGORIES)) {
-    if (avatars.includes(avatarId as unknown as string)) {
+    if ((avatars as readonly string[]).includes(avatarId)) {
       return category;
     }
   }
