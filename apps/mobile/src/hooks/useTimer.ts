@@ -1,11 +1,9 @@
-// React Native timer hook for active sessions
+// React Native timer hook for active sessions (aligned with web app)
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppStore } from '@/lib/store';
 import {
   calculateRemainingTime,
   isWarningState,
-  Kid,
-  Session,
 } from '@game-time-tracker/core';
 
 interface TimerState {
@@ -13,6 +11,71 @@ interface TimerState {
   isWarning: boolean;
   isPaused: boolean;
   progress: number;
+}
+
+// Global timer state refs (similar to web app timer manager)
+const timerIntervals = new Map<string, NodeJS.Timeout>();
+const subscribers = new Map<string, Set<(state: TimerState) => void>>();
+
+// Global tick function that updates all timers
+function startGlobalTimer() {
+  const interval = setInterval(() => {
+    // Get all kids with active sessions
+    const kids = useAppStore.getState().kids;
+    
+    for (const kid of kids) {
+      if (!kid.activeSession) continue;
+      
+      const state = calculateTimerState(kid);
+      
+      // Notify all subscribers for this kid
+      const kidSubscribers = subscribers.get(kid.id);
+      if (kidSubscribers) {
+        kidSubscribers.forEach(callback => callback(state));
+      }
+    }
+  }, 1000); // Update every second (same as web)
+  
+  return interval;
+}
+
+// Initialize global timer
+let globalInterval: NodeJS.Timeout | null = null;
+
+function getGlobalTimer() {
+  if (!globalInterval) {
+    globalInterval = startGlobalTimer();
+  }
+  return globalInterval;
+}
+
+function calculateTimerState(kid: any): TimerState {
+  if (!kid.activeSession) {
+    return {
+      remainingSeconds: null,
+      isWarning: false,
+      isPaused: false,
+      progress: 0,
+    };
+  }
+
+  const remaining = calculateRemainingTime(
+    kid.activeSession.startTime,
+    kid.ticketDuration,
+    kid.activeSession.isPaused,
+    kid.activeSession.pausedAt,
+    kid.activeSession.totalPausedDuration || 0
+  );
+
+  const totalSeconds = kid.ticketDuration * 60;
+  const progress = Math.min(100, Math.max(0, ((totalSeconds - remaining) / totalSeconds) * 100));
+
+  return {
+    remainingSeconds: remaining,
+    isWarning: isWarningState(remaining),
+    isPaused: kid.activeSession.isPaused,
+    progress,
+  };
 }
 
 export function useTimer(kidId: string) {
@@ -30,71 +93,82 @@ export function useTimer(kidId: string) {
     )
   );
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const callbackRef = useRef<(state: TimerState) => void>();
 
+  // Set up callback
   useEffect(() => {
-    if (!kid?.activeSession) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+    callbackRef.current = (newState: TimerState) => {
+      setState(newState);
+    };
+  });
+
+  // Initialize timer state immediately
+  useEffect(() => {
+    if (kid?.activeSession) {
+      setState(calculateTimerState(kid));
+    } else {
       setState({
         remainingSeconds: null,
         isWarning: false,
         isPaused: false,
         progress: 0,
       });
-      return;
     }
+  }, [kid?.id, kid?.activeSession?.startTime, kid?.ticketDuration]);
 
-    const calculateState = (): TimerState => {
-      const remaining = calculateRemainingTime(
-        kid.activeSession!.startTime,
-        kid.ticketDuration,
-        kid.activeSession!.isPaused,
-        kid.activeSession!.pausedAt,
-        kid.activeSession!.totalPausedDuration || 0
-      );
+  // Subscribe to global timer updates
+  useEffect(() => {
+    if (!kidId) return;
 
-      const totalSeconds = kid.ticketDuration * 60;
-      const progress = Math.min(100, Math.max(0, ((totalSeconds - remaining) / totalSeconds) * 100));
-
-      return {
-        remainingSeconds: remaining,
-        isWarning: isWarningState(remaining),
-        isPaused: kid.activeSession!.isPaused,
-        progress,
-      };
+    const updateState = (newState: TimerState) => {
+      setState(newState);
     };
 
-    // Initial calculation
-    setState(calculateState());
+    // Add to subscribers
+    if (!subscribers.has(kidId)) {
+      subscribers.set(kidId, new Set());
+    }
+    subscribers.get(kidId)?.add(updateState);
 
-    // Update every second (slower than web for battery)
-    intervalRef.current = setInterval(() => {
-      setState(calculateState());
-    }, 1000);
+    // Start global timer
+    getGlobalTimer();
+
+    // Also subscribe to store changes
+    const unsubscribeStore = useAppStore.subscribe(() => {
+      const currentKid = useAppStore.getState().kids.find(k => k.id === kidId);
+      if (currentKid?.activeSession) {
+        setState(calculateTimerState(currentKid));
+      } else {
+        setState({
+          remainingSeconds: null,
+          isWarning: false,
+          isPaused: false,
+          progress: 0,
+        });
+      }
+    });
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      subscribers.get(kidId)?.delete(updateState);
+      if (subscribers.get(kidId)?.size === 0) {
+        subscribers.delete(kidId);
       }
+      unsubscribeStore();
     };
-  }, [kid?.id, kid?.activeSession?.startTime, kid?.ticketDuration]);
+  }, [kidId]);
 
   return state;
 }
 
 export function useActiveTimers() {
-  const kids = useAppStore((state) => state.kids);
   const [activeTimers, setActiveTimers] = useState<
-    Array<{ kid: Kid; remainingSeconds: number }>
+    Array<{ kid: any; remainingSeconds: number }>
   >([]);
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const kids = useAppStore((state) => state.kids);
 
   useEffect(() => {
-    const calculateActiveTimers = () => {
+    const updateActiveTimers = () => {
       const active = kids
         .filter((kid) => kid.activeSession && !kid.activeSession.isPaused)
         .map((kid) => ({
@@ -110,14 +184,14 @@ export function useActiveTimers() {
       setActiveTimers(active);
     };
 
-    calculateActiveTimers();
+    updateActiveTimers();
+    getGlobalTimer();
 
-    intervalRef.current = setInterval(calculateActiveTimers, 1000);
+    // Update every second
+    const interval = setInterval(updateActiveTimers, 1000);
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      clearInterval(interval);
     };
   }, [kids]);
 
