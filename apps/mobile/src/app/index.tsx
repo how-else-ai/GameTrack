@@ -1,14 +1,30 @@
-// Main screen - Kids list
-import { View, Text, StyleSheet, FlatList, Pressable, RefreshControl } from 'react-native';
+// Main screen - Kids list (aligned with web app)
+import { View, Text, StyleSheet, FlatList, Pressable, RefreshControl, TouchableOpacity, Animated } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useAppStore } from '@/lib/store';
-import { useTimer, useActiveTimers } from '@/hooks/useTimer';
+import { useTimer } from '@/hooks/useTimer';
 import { useSync } from '@/hooks/useSync';
 import { Kid } from '@game-time-tracker/core';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 
-// Avatar emoji map (simplified for mobile)
+// Theme colors matching web app
+const COLORS = {
+  background: '#0a0a12',
+  card: '#12121f',
+  primary: '#ffea00',
+  retroCyan: '#00f0ff',
+  retroMagenta: '#ff2a6d',
+  retroGreen: '#05ffa1',
+  retroOrange: '#ff6b35',
+  retroPurple: '#b967ff',
+  border: '#3a3a5e',
+  muted: '#1a1a2e',
+  mutedForeground: '#8888aa',
+  text: '#f0f0f0',
+};
+
+// Avatar emoji fallback (should use pixel art images ideally)
 const AVATAR_EMOJIS: Record<string, string> = {
   'alien-1': '👽', 'alien-2': '👾', 'alien-3': '🛸', 'alien-4': '🚀', 'alien-5': '🌟',
   'kid-1': '🧒', 'kid-2': '👦', 'kid-3': '👧', 'kid-4': '🧑', 'kid-5': '🏃',
@@ -22,82 +38,161 @@ function formatTime(totalSeconds: number): string {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
-function KidCard({ kid, onPress }: { kid: Kid; onPress: () => void }) {
+function TicketDot({ status, isWarning }: { status: 'available' | 'in-use' | 'used'; isWarning?: boolean }) {
+  let bgColor = COLORS.border;
+  let borderColor = COLORS.border;
+  
+  if (status === 'available') {
+    bgColor = COLORS.retroGreen;
+    borderColor = COLORS.retroGreen;
+  } else if (status === 'in-use') {
+    bgColor = isWarning ? COLORS.retroOrange : COLORS.primary;
+    borderColor = isWarning ? COLORS.retroOrange : COLORS.primary;
+  }
+  
+  return (
+    <View style={[
+      styles.ticketDot,
+      { backgroundColor: `${bgColor}33`, borderColor }
+    ]}>
+      {status === 'available' && (
+        <Text style={[styles.ticketDotText, { color: COLORS.retroGreen }]}>✓</Text>
+      )}
+    </View>
+  );
+}
+
+function KidCard({ kid, onPress, onEdit, onDelete, onResetTickets }: {
+  kid: Kid;
+  onPress: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onResetTickets: () => void;
+}) {
   const { remainingSeconds, isWarning, isPaused } = useTimer(kid.id);
   const availableTickets = kid.tickets.filter(t => t.status === 'available').length;
-  const inUseTickets = kid.tickets.filter(t => t.status === 'in-use').length;
   const usedTickets = kid.tickets.filter(t => t.status === 'used').length;
   const hasActiveSession = !!kid.activeSession;
 
+  const totalTime = kid.ticketDuration * 60;
+  const progress = hasActiveSession && remainingSeconds !== null 
+    ? ((totalTime - remainingSeconds) / totalTime) * 100 
+    : 0;
+
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [
-      styles.card,
-      pressed && styles.cardPressed,
-      hasActiveSession && styles.cardActive,
-    ]}>
-      <View style={styles.cardContent}>
-        <View style={styles.avatarContainer}>
+    <View>
+      <Pressable 
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.card,
+          hasActiveSession && styles.cardActive,
+          pressed && styles.cardPressed,
+        ]}
+      >
+        {/* Avatar */}
+        <TouchableOpacity onPress={onPress} style={styles.avatarContainer}>
           <Text style={styles.avatar}>{AVATAR_EMOJIS[kid.avatarEmoji] || '👤'}</Text>
-        </View>
+        </TouchableOpacity>
 
-        <View style={styles.info}>
+        {/* Info */}
+        <View style={styles.cardInfo}>
           <Text style={styles.name}>{kid.name}</Text>
-
-          {/* Tickets */}
-          <View style={styles.ticketsRow}>
-            {Array.from({ length: kid.ticketLimit }).map((_, i) => {
-              const ticket = kid.tickets[i];
-              let dotStyle = styles.ticketAvailable;
-              if (ticket?.status === 'in-use') dotStyle = styles.ticketInUse;
-              if (ticket?.status === 'used') dotStyle = styles.ticketUsed;
-
-              return (
-                <View
-                  key={i}
-                  style={[
-                    styles.ticketDot,
-                    dotStyle,
-                    ticket?.status === 'in-use' && isWarning && styles.ticketWarning,
-                  ]}
-                />
-              );
-            })}
+          <View style={styles.ticketInfo}>
+            <Ionicons name="ticket" size={12} color={COLORS.mutedForeground} />
+            <Text style={styles.ticketCount}>{availableTickets} / {kid.ticketLimit} left</Text>
           </View>
+
+          {/* Active Session Progress */}
+          {hasActiveSession && remainingSeconds !== null && (
+            <View style={styles.activeSession}>
+              <View style={styles.sessionHeader}>
+                <Ionicons 
+                  name={isPaused ? "pause" : "time"} 
+                  size={12} 
+                  color={isWarning ? COLORS.retroMagenta : COLORS.primary}
+                />
+                <Text style={[
+                  styles.sessionStatus,
+                  isWarning && styles.sessionStatusWarning,
+                  isPaused && styles.sessionStatusPaused,
+                ]}>
+                  {isPaused ? 'Paused' : 'Playing'}
+                </Text>
+              </View>
+              <Text style={[
+                styles.sessionTime,
+                isWarning && styles.sessionTimeWarning,
+              ]}>
+                {formatTime(remainingSeconds)}
+              </Text>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: `${progress}%` }]} />
+              </View>
+            </View>
+          )}
+
+          {/* Tickets Display */}
+          {!hasActiveSession && (
+            <View style={styles.ticketsDisplay}>
+              <View style={styles.ticketsRow}>
+                {kid.tickets.map((ticket, index) => (
+                  <TicketDot 
+                    key={ticket.id} 
+                    status={ticket.status} 
+                    isWarning={isWarning && ticket.status === 'in-use'}
+                  />
+                ))}
+              </View>
+              {usedTickets > 0 && (
+                <TouchableOpacity onPress={onResetTickets} style={styles.resetButton}>
+                  <Ionicons name="refresh" size={12} color={COLORS.mutedForeground} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* Play Button */}
+          {!hasActiveSession && availableTickets > 0 && (
+            <TouchableOpacity onPress={onPress} style={styles.playButton}>
+              <Ionicons name="play" size={14} color={COLORS.background} />
+              <Text style={styles.playButtonText}>Play</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* Timer Display */}
-        {hasActiveSession && remainingSeconds !== null && (
-          <View style={styles.timerContainer}>
-            <Text style={[
-              styles.timerText,
-              isWarning && styles.timerWarningText,
-              isPaused && styles.timerPausedText,
-            ]}>
-              {formatTime(remainingSeconds)}
-            </Text>
-            {isPaused && <Text style={styles.pausedLabel}>PAUSED</Text>}
-          </View>
-        )}
-
-        {!hasActiveSession && availableTickets > 0 && (
-          <View style={styles.startButton}>
-            <Text style={styles.startButtonText}>START</Text>
-          </View>
-        )}
-
-        {!hasActiveSession && availableTickets === 0 && (
-          <Text style={styles.noTickets}>No tickets</Text>
-        )}
-      </View>
-    </Pressable>
+        {/* Quick Actions */}
+        <View style={styles.quickActions}>
+          <TouchableOpacity onPress={onEdit} style={styles.iconButton}>
+            <Ionicons name="create" size={16} color={COLORS.mutedForeground} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onDelete} style={styles.iconButton}>
+            <Ionicons name="trash" size={16} color={COLORS.retroMagenta} />
+          </TouchableOpacity>
+        </View>
+      </Pressable>
+    </View>
   );
 }
 
 export default function KidsScreen() {
   const kids = useAppStore((state) => state.kids);
-  const { isConnected, requestFullSync } = useSync();
+  const { isConnected, syncStatus, requestFullSync } = useSync();
+  const pairedDevices = useAppStore((state) => state.pairedDevices);
+  const lastSyncFlash = useAppStore((state) => state.lastSyncFlash);
+  
   const [refreshing, setRefreshing] = useState(false);
-  const activeTimers = useActiveTimers();
+  const [showSyncFlash, setShowSyncFlash] = useState(false);
+  const [deleteKidId, setDeleteKidId] = useState<string | null>(null);
+  const [editingKid, setEditingKid] = useState<Kid | null>(null);
+
+  // Track sync flash animation
+  useEffect(() => {
+    if (lastSyncFlash > 0) {
+      setShowSyncFlash(true);
+      const timer = setTimeout(() => setShowSyncFlash(false), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [lastSyncFlash]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -106,72 +201,169 @@ export default function KidsScreen() {
   }, [requestFullSync]);
 
   const handleKidPress = (kid: Kid) => {
-    if (kid.activeSession) {
-      router.push(`/timer/${kid.id}`);
-    } else if (kid.tickets.some(t => t.status === 'available')) {
+    if (kid.activeSession || kid.tickets.some(t => t.status === 'available')) {
       router.push(`/timer/${kid.id}`);
     }
   };
+
+  const handleEditKid = (kid: Kid) => {
+    setEditingKid(kid);
+    router.push(`/add-kid?kidId=${kid.id}`);
+  };
+
+  const handleDeleteKid = (kidId: string) => {
+    setDeleteKidId(kidId);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteKidId) {
+      useAppStore.getState().deleteKid(deleteKidId);
+      setDeleteKidId(null);
+    }
+  };
+
+  const handleResetTickets = (kidId: string) => {
+    useAppStore.getState().resetTickets(kidId);
+  };
+
+  const onlineDevices = pairedDevices.filter(d => d.isOnline).length;
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>KIDS</Text>
-        <View style={styles.headerActions}>
-          <Link href="/sync" asChild>
-            <Pressable style={styles.iconButton}>
-              <Ionicons
-                name="sync"
-                size={24}
-                color={isConnected ? '#05ffa1' : '#ff6b35'}
+        <View style={styles.headerLeft}>
+          {/* Logo placeholder */}
+          <View style={styles.logoContainer}>
+            <Text style={styles.logoIcon}>🎮</Text>
+          </View>
+          <View>
+            <Text style={styles.headerTitle1}>Game Time</Text>
+            <Text style={styles.headerTitle2}>Tracker</Text>
+          </View>
+        </View>
+        
+        {/* Sync Status */}
+        <View style={styles.headerRight}>
+          {pairedDevices.length > 0 && (
+            <TouchableOpacity
+              onPress={() => {
+                if (syncStatus !== 'syncing' && isConnected) {
+                  requestFullSync();
+                }
+              }}
+              disabled={syncStatus === 'syncing' || !isConnected}
+              style={[
+                styles.syncButton,
+                showSyncFlash && styles.syncButtonFlash,
+                !isConnected && styles.syncButtonDisabled,
+              ]}
+            >
+              <Ionicons 
+                name={showSyncFlash ? "wifi" : syncStatus === 'syncing' ? "refresh" : "wifi"} 
+                size={14} 
+                color={showSyncFlash ? COLORS.retroGreen : isConnected ? COLORS.mutedForeground : COLORS.retroOrange}
               />
-            </Pressable>
-          </Link>
-          <Link href="/add-kid" asChild>
-            <Pressable style={styles.iconButton}>
-              <Ionicons name="add" size={28} color="#ffea00" />
-            </Pressable>
+              <Text style={[
+                styles.syncButtonText,
+                showSyncFlash && styles.syncButtonTextFlash,
+                !isConnected && styles.syncButtonTextDisabled,
+              ]}>
+                {onlineDevices}/{pairedDevices.length}
+              </Text>
+            </TouchableOpacity>
+          )}
+          
+          <Link href="/sync" asChild>
+            <TouchableOpacity style={styles.iconButtonLarge}>
+              <Ionicons name="people" size={20} color={COLORS.mutedForeground} />
+            </TouchableOpacity>
           </Link>
         </View>
       </View>
 
-      {/* Active Timers Summary */}
-      {activeTimers.length > 0 && (
-        <View style={styles.activeTimersBanner}>
-          <Ionicons name="time" size={16} color="#05ffa1" />
-          <Text style={styles.activeTimersText}>
-            {activeTimers.length} active timer{activeTimers.length > 1 ? 's' : ''}
-          </Text>
+      {/* Main Content */}
+      <View style={styles.content}>
+        {/* Loading State */}
+        {kids.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>NO PLAYERS</Text>
+            <Text style={styles.emptyText}>
+              Add your first kid to start tracking their gaming time with tickets
+            </Text>
+            <Link href="/add-kid" asChild>
+              <TouchableOpacity style={styles.addButton}>
+                <Ionicons name="add" size={20} color={COLORS.background} />
+                <Text style={styles.addButtonText}>ADD PLAYER</Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
+        ) : (
+          <FlatList
+            data={kids}
+            keyExtractor={(kid) => kid.id}
+            renderItem={({ item }) => (
+              <KidCard
+                kid={item}
+                onPress={() => handleKidPress(item)}
+                onEdit={() => handleEditKid(item)}
+                onDelete={() => handleDeleteKid(item.id)}
+                onResetTickets={() => handleResetTickets(item.id)}
+              />
+            )}
+            contentContainerStyle={styles.list}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={COLORS.primary}
+              />
+            }
+          />
+        )}
+      </View>
+
+      {/* Footer with Add Button */}
+      {kids.length > 0 && (
+        <View style={styles.footer}>
+          <TouchableOpacity 
+            onPress={() => {
+              setEditingKid(null);
+              router.push('/add-kid');
+            }}
+            style={styles.addButtonFooter}
+          >
+            <Ionicons name="add" size={20} color={COLORS.background} />
+            <Text style={styles.addButtonText}>ADD PLAYER</Text>
+          </TouchableOpacity>
         </View>
       )}
 
-      {/* Kids List */}
-      {kids.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No kids added yet</Text>
-          <Link href="/add-kid" asChild>
-            <Pressable style={styles.addButton}>
-              <Text style={styles.addButtonText}>Add Your First Kid</Text>
-            </Pressable>
-          </Link>
+      {/* Delete Confirmation Modal */}
+      {deleteKidId && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>DELETE PLAYER?</Text>
+            <Text style={styles.modalText}>
+              This will permanently delete {kids.find(k => k.id === deleteKidId)?.name || 'this kid'} and all their ticket history.
+              {'\n'}This action cannot be undone.
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                onPress={() => setDeleteKidId(null)}
+                style={styles.modalButton}
+              >
+                <Text style={styles.modalButtonText}>CANCEL</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={handleConfirmDelete}
+                style={[styles.modalButton, styles.modalButtonDanger]}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextDanger]}>DELETE</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      ) : (
-        <FlatList
-          data={kids}
-          keyExtractor={(kid) => kid.id}
-          renderItem={({ item }) => (
-            <KidCard kid={item} onPress={() => handleKidPress(item)} />
-          )}
-          contentContainerStyle={styles.list}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor="#ffea00"
-            />
-          }
-        />
       )}
     </View>
   );
@@ -180,149 +372,87 @@ export default function KidsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    paddingTop: 8,
-    borderBottomWidth: 2,
-    borderBottomColor: '#333',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 4,
+    borderBottomColor: COLORS.border,
+    backgroundColor: `${COLORS.card}99`,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffea00',
-    letterSpacing: 2,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  iconButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#2a2a4e',
-  },
-  activeTimersBanner: {
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#05ffa120',
-    paddingVertical: 8,
-    gap: 8,
-  },
-  activeTimersText: {
-    color: '#05ffa1',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  list: {
-    padding: 16,
     gap: 12,
   },
-  card: {
-    backgroundColor: '#2a2a4e',
-    borderRadius: 12,
+  logoContainer: {
+    width: 40,
+    height: 40,
+    backgroundColor: COLORS.muted,
     borderWidth: 2,
-    borderColor: '#444',
-    padding: 16,
-  },
-  cardPressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.98 }],
-  },
-  cardActive: {
-    borderColor: '#05ffa1',
-    backgroundColor: '#2a4a4e',
-  },
-  cardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatarContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#3a3a5e',
+    borderColor: COLORS.border,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
   },
-  avatar: {
-    fontSize: 28,
+  logoIcon: {
+    fontSize: 20,
   },
-  info: {
-    flex: 1,
-  },
-  name: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  ticketsRow: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  ticketDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 2,
-  },
-  ticketAvailable: {
-    backgroundColor: '#05ffa1',
-    borderColor: '#05ffa1',
-  },
-  ticketInUse: {
-    backgroundColor: '#ffea00',
-    borderColor: '#ffea00',
-  },
-  ticketUsed: {
-    backgroundColor: '#444',
-    borderColor: '#555',
-  },
-  ticketWarning: {
-    backgroundColor: '#ff6b35',
-    borderColor: '#ff6b35',
-  },
-  timerContainer: {
-    alignItems: 'center',
-  },
-  timerText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffea00',
-    fontVariant: ['tabular-nums'],
-  },
-  timerWarningText: {
-    color: '#ff6b35',
-  },
-  timerPausedText: {
-    color: '#888',
-  },
-  pausedLabel: {
+  headerTitle1: {
     fontSize: 10,
-    color: '#888',
-    marginTop: 4,
-  },
-  startButton: {
-    backgroundColor: '#ffea00',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  startButtonText: {
-    color: '#1a1a2e',
     fontWeight: 'bold',
-    fontSize: 12,
+    color: COLORS.primary,
+    letterSpacing: 1,
   },
-  noTickets: {
-    color: '#666',
-    fontSize: 12,
+  headerTitle2: {
+    fontSize: 8,
+    color: COLORS.mutedForeground,
+    letterSpacing: 1,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  syncButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.muted,
+  },
+  syncButtonFlash: {
+    borderColor: COLORS.retroCyan,
+    backgroundColor: `${COLORS.retroCyan}20`,
+  },
+  syncButtonDisabled: {
+    opacity: 0.5,
+  },
+  syncButtonText: {
+    fontSize: 8,
+    color: COLORS.mutedForeground,
+    fontWeight: '600',
+  },
+  syncButtonTextFlash: {
+    color: COLORS.retroGreen,
+  },
+  syncButtonTextDisabled: {
+    color: COLORS.mutedForeground,
+  },
+  iconButtonLarge: {
+    padding: 8,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    backgroundColor: 'transparent',
+  },
+  content: {
+    flex: 1,
   },
   emptyState: {
     flex: 1,
@@ -330,20 +460,247 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 32,
   },
+  emptyTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginBottom: 8,
+    letterSpacing: 1,
+  },
   emptyText: {
-    color: '#888',
-    fontSize: 18,
-    marginBottom: 24,
+    fontSize: 10,
+    color: COLORS.mutedForeground,
+    textAlign: 'center',
+    marginBottom: 32,
+    maxWidth: 300,
   },
   addButton: {
-    backgroundColor: '#ffea00',
+    backgroundColor: COLORS.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 16,
   },
   addButtonText: {
-    color: '#1a1a2e',
+    color: COLORS.background,
+    fontSize: 14,
     fontWeight: 'bold',
+  },
+  list: {
+    padding: 16,
+    gap: 16,
+  },
+  card: {
+    backgroundColor: COLORS.card,
+    borderRadius: 8,
+    borderWidth: 4,
+    borderColor: COLORS.border,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 0,
+    elevation: 4,
+  },
+  cardActive: {
+    borderColor: COLORS.retroGreen,
+    backgroundColor: '#1a2a2a',
+  },
+  cardPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
+  },
+  avatarContainer: {
+    width: 56,
+    height: 56,
+    borderWidth: 4,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.muted,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatar: {
+    fontSize: 28,
+  },
+  cardInfo: {
+    flex: 1,
+  },
+  name: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  ticketInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 12,
+  },
+  ticketCount: {
+    fontSize: 8,
+    color: COLORS.mutedForeground,
+  },
+  activeSession: {
+    marginTop: 8,
+    gap: 8,
+  },
+  sessionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  sessionStatus: {
+    fontSize: 8,
+    color: COLORS.primary,
+  },
+  sessionStatusWarning: {
+    color: COLORS.retroMagenta,
+  },
+  sessionStatusPaused: {
+    color: COLORS.mutedForeground,
+  },
+  sessionTime: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  sessionTimeWarning: {
+    color: COLORS.retroMagenta,
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: COLORS.muted,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: COLORS.primary,
+  },
+  ticketsDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  ticketsRow: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  ticketDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ticketDotText: {
+    fontSize: 6,
+    fontWeight: 'bold',
+  },
+  resetButton: {
+    padding: 4,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  playButton: {
+    backgroundColor: COLORS.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 4,
+    marginTop: 12,
+    gap: 6,
+  },
+  playButtonText: {
+    color: COLORS.background,
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  quickActions: {
+    gap: 4,
+  },
+  iconButton: {
+    padding: 8,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  footer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 4,
+    borderTopColor: COLORS.border,
+    backgroundColor: `${COLORS.card}99`,
+  },
+  addButtonFooter: {
+    backgroundColor: COLORS.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 8,
+  },
+  // Modal styles
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+    zIndex: 100,
+  },
+  modalContent: {
+    backgroundColor: COLORS.card,
+    borderRadius: 8,
+    padding: 24,
+    maxWidth: 400,
+    width: '100%',
+  },
+  modalTitle: {
     fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 12,
+  },
+  modalText: {
+    fontSize: 14,
+    color: COLORS.mutedForeground,
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.border,
+  },
+  modalButtonDanger: {
+    backgroundColor: COLORS.retroMagenta,
+    borderColor: COLORS.retroMagenta,
+  },
+  modalButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  modalButtonTextDanger: {
+    color: COLORS.background,
   },
 });

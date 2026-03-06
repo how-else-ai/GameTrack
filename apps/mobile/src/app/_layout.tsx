@@ -1,10 +1,18 @@
-// Root layout for Expo Router
+// Root layout for Expo Router (aligned with web app)
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { useNotifications } from '@/hooks/useNotifications';
+
+// Theme colors matching web app
+const COLORS = {
+  background: '#0a0a12',
+  card: '#12121f',
+  primary: '#ffea00',
+  border: '#3a3a5e',
+};
 
 function AppInitializer({ children }: { children: React.ReactNode }) {
   const initializeDevice = useAppStore((state) => state.initializeDevice);
@@ -26,26 +34,30 @@ export default function RootLayout() {
         <Stack
           screenOptions={{
             headerStyle: {
-              backgroundColor: '#1a1a2e',
+              backgroundColor: COLORS.card,
             },
-            headerTintColor: '#ffea00',
+            headerTintColor: COLORS.primary,
             headerTitleStyle: {
               fontWeight: 'bold',
+              fontSize: 12,
             },
+            headerShadowVisible: false,
             contentStyle: {
-              backgroundColor: '#1a1a2e',
+              backgroundColor: COLORS.background,
             },
           }}
         >
           <Stack.Screen
             name="index"
             options={{
+              headerShown: false,
               title: 'Game Time Tracker',
             }}
           />
           <Stack.Screen
             name="timer/[kidId]"
             options={{
+              headerShown: false,
               title: 'Timer',
               presentation: 'modal',
             }}
@@ -53,6 +65,7 @@ export default function RootLayout() {
           <Stack.Screen
             name="add-kid"
             options={{
+              headerShown: false,
               title: 'Add Kid',
               presentation: 'modal',
             }}
@@ -60,12 +73,13 @@ export default function RootLayout() {
           <Stack.Screen
             name="sync"
             options={{
+              headerShown: false,
               title: 'Pair Devices',
               presentation: 'modal',
             }}
           />
         </Stack>
-        <StatusBar style="light" />
+        <StatusBar style="light" backgroundColor={COLORS.card} />
       </AppInitializer>
     </SafeAreaProvider>
   );

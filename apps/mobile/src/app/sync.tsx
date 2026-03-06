@@ -1,5 +1,5 @@
-// Sync / Pair devices screen
-import { View, Text, StyleSheet, Pressable, TextInput, ScrollView, Alert, ActivityIndicator } from 'react-native';
+// Sync / Pair devices screen (aligned with web app)
+import { View, Text, StyleSheet, Pressable, TextInput, ScrollView, Alert, ActivityIndicator, TouchableOpacity, Modal } from 'react-native';
 import { router } from 'expo-router';
 import { useAppStore } from '@/lib/store';
 import { useSync } from '@/hooks/useSync';
@@ -10,6 +10,22 @@ import * as Clipboard from 'expo-clipboard';
 import QRCode from 'qrcode';
 import { SvgXml } from 'react-native-svg';
 
+// Theme colors
+const COLORS = {
+  background: '#0a0a12',
+  card: '#12121f',
+  primary: '#ffea00',
+  retroCyan: '#00f0ff',
+  retroMagenta: '#ff2a6d',
+  retroGreen: '#05ffa1',
+  retroOrange: '#ff6b35',
+  retroPurple: '#b967ff',
+  border: '#3a3a5e',
+  muted: '#1a1a2e',
+  mutedForeground: '#8888aa',
+  text: '#f0f0f0',
+};
+
 type SyncMode = 'menu' | 'generate' | 'scan';
 
 export default function SyncScreen() {
@@ -19,6 +35,7 @@ export default function SyncScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [scanned, setScanned] = useState(false);
+  const [scanMethod, setScanMethod] = useState<'camera' | 'manual'>('manual');
 
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
 
@@ -36,6 +53,7 @@ export default function SyncScreen() {
   } = useSync();
 
   const [showFlash, setShowFlash] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Flash animation on sync
   useEffect(() => {
@@ -44,6 +62,43 @@ export default function SyncScreen() {
       setTimeout(() => setShowFlash(false), 800);
     }
   }, [lastSyncFlash]);
+
+  // Reset state helper
+  const resetState = useCallback(() => {
+    setMode('menu');
+    setQrSvg(null);
+    setScanUrl('');
+    setIsLoading(false);
+    setError('');
+    setScanned(false);
+    setScanMethod('manual');
+  }, []);
+
+  // Copy device ID to clipboard
+  const copyDeviceId = useCallback(async () => {
+    if (!deviceId) return;
+    try {
+      await Clipboard.setStringAsync(deviceId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy:', error);
+    }
+  }, [deviceId]);
+
+  // Share device info
+  const shareDeviceInfo = useCallback(async () => {
+    if (!deviceId) return;
+    const shareText = `Game Time Tracker - Pair with me!\nDevice: ${deviceName}\nID: ${deviceId}`;
+    try {
+      await Clipboard.setStringAsync(shareText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      Alert.alert('Copied', 'Device info copied to clipboard');
+    } catch (error) {
+      console.error('Failed to share:', error);
+    }
+  }, [deviceId, deviceName]);
 
   // Generate QR code
   const handleGenerateQR = useCallback(async () => {
@@ -73,7 +128,7 @@ export default function SyncScreen() {
         type: 'svg',
         width: 280,
         margin: 2,
-        color: { dark: '#ffea00', light: '#1a1a2e' },
+        color: { dark: '#000', light: '#fff' },
       });
 
       setQrSvg(svg);
@@ -143,7 +198,10 @@ export default function SyncScreen() {
 
       if (result.success) {
         Alert.alert('Success', `Paired with ${data.deviceName || 'device'}!`, [
-          { text: 'OK', onPress: () => router.back() },
+          { text: 'OK', onPress: () => {
+            resetState();
+            router.back();
+          }},
         ]);
       } else {
         setError(result.error || 'Pairing failed');
@@ -166,66 +224,86 @@ export default function SyncScreen() {
   };
 
   // Unpair device
-  const handleUnpair = (deviceId: string) => {
+  const handleUnpair = (targetDeviceId: string) => {
+    const device = pairedDevices.find(d => d.deviceId === targetDeviceId);
     Alert.alert(
       'Unpair Device?',
       'This will remove the device pairing.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Unpair', style: 'destructive', onPress: () => unpairDevice(deviceId) },
+        { text: 'Unpair', style: 'destructive', onPress: () => unpairDevice(targetDeviceId) },
       ]
     );
   };
+
+  const onlineCount = pairedDevices.filter(d => d.isOnline).length;
 
   // Menu view
   if (mode === 'menu') {
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {/* How it works */}
+        <View style={styles.infoCard}>
+          <Ionicons name="swap-horizontal" size={16} color={COLORS.retroCyan} />
+          <View style={styles.infoContent}>
+            <Text style={styles.infoTitle}>How Sync Works</Text>
+            <Text style={styles.infoText}>
+              1. Device A: Show QR{'\n'}
+              2. Device B: Scan QR{'\n'}
+              3. Both stay on this screen
+            </Text>
+          </View>
+        </View>
+
         {/* Connection Status */}
         <View style={[
           styles.statusCard,
-          showFlash && styles.statusCardFlash,
-          isConnected ? styles.statusCardConnected : styles.statusCardDisconnected,
+          showFlash ? styles.statusCardFlash : isConnected ? styles.statusCardConnected : styles.statusCardDisconnected,
         ]}>
           <Ionicons
-            name={isConnected ? 'cloud-done' : 'cloud-offline'}
-            size={24}
-            color={isConnected ? '#05ffa1' : '#ff6b35'}
+            name={showFlash ? 'wifi' : isConnected ? 'cloud-done' : 'cloud-offline'}
+            size={20}
+            color={showFlash ? COLORS.retroGreen : isConnected ? COLORS.retroGreen : COLORS.retroOrange}
           />
           <Text style={[
             styles.statusText,
-            isConnected ? styles.statusTextConnected : styles.statusTextDisconnected,
+            showFlash ? styles.statusTextFlash : isConnected ? styles.statusTextConnected : styles.statusTextDisconnected,
           ]}>
-            {isConnected ? 'Connected' : 'Connecting...'}
+            {showFlash ? 'Synced!' : isConnected ? 'Connected' : 'Connecting...'}
           </Text>
         </View>
 
-        {/* Device Info */}
+        {/* Your Device Info */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Your Device</Text>
           <Text style={styles.deviceName}>{deviceName}</Text>
-          <Text style={styles.deviceId}>{deviceId}</Text>
+          <View style={styles.deviceIdRow}>
+            <Text style={styles.deviceId} numberOfLines={1}>{deviceId}</Text>
+            <TouchableOpacity onPress={copyDeviceId} style={styles.copyButton}>
+              <Ionicons name={copied ? 'checkmark' : 'copy'} size={12} color={copied ? COLORS.retroGreen : COLORS.mutedForeground} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Paired Devices */}
         {pairedDevices.length > 0 && (
           <View style={styles.card}>
             <Text style={styles.cardLabel}>
-              Paired Devices ({pairedDevices.filter(d => d.isOnline).length}/{pairedDevices.length} online)
+              Paired ({onlineCount}/{pairedDevices.length} online)
             </Text>
             {pairedDevices.map((device) => (
               <View key={device.deviceId} style={styles.pairedDevice}>
                 <View style={styles.deviceInfo}>
-                  <Ionicons name="phone-portrait" size={20} color="#888" />
+                  <Ionicons name="phone-portrait" size={16} color={COLORS.mutedForeground} />
                   <Text style={styles.pairedDeviceName}>{device.deviceName}</Text>
                   <View style={[
                     styles.onlineIndicator,
                     device.isOnline ? styles.onlineIndicatorOn : styles.onlineIndicatorOff,
                   ]} />
                 </View>
-                <Pressable onPress={() => handleUnpair(device.deviceId)}>
-                  <Ionicons name="trash" size={20} color="#ff2a6d" />
-                </Pressable>
+                <TouchableOpacity onPress={() => handleUnpair(device.deviceId)} style={styles.deleteButton}>
+                  <Ionicons name="trash" size={16} color={COLORS.retroMagenta} />
+                </TouchableOpacity>
               </View>
             ))}
           </View>
@@ -233,23 +311,23 @@ export default function SyncScreen() {
 
         {/* Action Buttons */}
         <View style={styles.actions}>
-          <Pressable
+          <TouchableOpacity
             onPress={handleGenerateQR}
             style={[styles.actionButton, !isConnected && styles.actionButtonDisabled]}
             disabled={!isConnected}
           >
-            <Ionicons name="qr-code" size={32} color="#1a1a2e" />
+            <Ionicons name="qr-code" size={32} color={COLORS.background} />
             <Text style={styles.actionButtonText}>SHOW QR CODE</Text>
-          </Pressable>
+          </TouchableOpacity>
 
-          <Pressable
+          <TouchableOpacity
             onPress={() => setMode('scan')}
             style={[styles.actionButton, styles.actionButtonSecondary, !isConnected && styles.actionButtonDisabled]}
             disabled={!isConnected}
           >
-            <Ionicons name="scan" size={32} color="#ffea00" />
+            <Ionicons name="scan" size={32} color={COLORS.primary} />
             <Text style={[styles.actionButtonText, styles.actionButtonTextSecondary]}>SCAN QR CODE</Text>
-          </Pressable>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     );
@@ -259,27 +337,49 @@ export default function SyncScreen() {
   if (mode === 'generate') {
     return (
       <View style={styles.container}>
-        <View style={styles.qrContainer}>
-          <Text style={styles.instructions}>
-            Show this QR code to another device to pair
-          </Text>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={resetState} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Show QR Code</Text>
+        </View>
 
-          {isLoading ? (
-            <ActivityIndicator size="large" color="#ffea00" />
-          ) : qrSvg ? (
-            <View style={styles.qrCode}>
-              <SvgXml xml={qrSvg} width={280} height={280} />
-            </View>
-          ) : null}
+        <ScrollView contentContainerStyle={styles.generateContent}>
+          {/* Instructions */}
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTextCenter}>
+              1. Keep this screen open{'\n'}
+              2. On other device: tap SCAN QR{'\n'}
+              3. Point camera at this QR code
+            </Text>
+          </View>
+
+          {/* QR Code */}
+          <View style={styles.qrContainer}>
+            {isLoading ? (
+              <ActivityIndicator size="large" color={COLORS.primary} />
+            ) : qrSvg ? (
+              <View style={styles.qrCode}>
+                <SvgXml xml={qrSvg} width={280} height={280} />
+              </View>
+            ) : null}
+          </View>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           <Text style={styles.expiryText}>QR code expires in 5 minutes</Text>
-        </View>
 
-        <Pressable onPress={() => setMode('menu')} style={styles.backButton}>
-          <Text style={styles.backButtonText}>BACK</Text>
-        </Pressable>
+          {/* Device Info */}
+          <View style={styles.card}>
+            <View style={styles.deviceIdHeader}>
+              <Text style={styles.cardLabel}>Your Device ID:</Text>
+              <TouchableOpacity onPress={shareDeviceInfo} style={styles.shareButton}>
+                <Ionicons name="share" size={16} color={COLORS.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.deviceId}>{deviceId}</Text>
+          </View>
+        </ScrollView>
       </View>
     );
   }
@@ -288,75 +388,124 @@ export default function SyncScreen() {
   if (mode === 'scan') {
     return (
       <View style={styles.container}>
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#ffea00" />
-            <Text style={styles.loadingText}>Pairing...</Text>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={resetState} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Scan QR Code</Text>
+        </View>
+
+        <ScrollView contentContainerStyle={styles.scanContent}>
+          {/* Instructions */}
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTextCenter}>
+              Scan QR from other device OR paste URL from camera app
+            </Text>
           </View>
-        ) : (
-          <>
-            {/* Camera Scanner */}
-            {cameraPermission?.granted ? (
-              <View style={styles.scannerContainer}>
-                <CameraView
-                  style={styles.camera}
-                  facing="back"
-                  barcodeScannerSettings={{
-                    barcodeTypes: ['qr'],
-                  }}
-                  onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-                />
-                <View style={styles.scanOverlay}>
-                  <View style={styles.scanFrame} />
-                </View>
-                <Text style={styles.scanInstructions}>
-                  Point camera at QR code
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.permissionContainer}>
-                <Text style={styles.permissionText}>
-                  Camera permission is required to scan QR codes
-                </Text>
-                <Pressable onPress={requestCameraPermission} style={styles.permissionButton}>
-                  <Text style={styles.permissionButtonText}>Grant Permission</Text>
-                </Pressable>
-              </View>
-            )}
 
-            {/* Manual Input */}
-            <View style={styles.manualInput}>
-              <Text style={styles.manualLabel}>Or paste URL:</Text>
-              <View style={styles.inputRow}>
-                <TextInput
-                  style={styles.input}
-                  value={scanUrl}
-                  onChangeText={setScanUrl}
-                  placeholder="Paste QR code URL"
-                  placeholderTextColor="#666"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                <Pressable onPress={handlePaste} style={styles.pasteButton}>
-                  <Ionicons name="clipboard" size={20} color="#ffea00" />
-                </Pressable>
-              </View>
-              <Pressable
-                onPress={() => handlePairing(scanUrl)}
-                style={[styles.pairButton, !scanUrl && styles.pairButtonDisabled]}
-                disabled={!scanUrl}
-              >
-                <Text style={styles.pairButtonText}>PAIR</Text>
-              </Pressable>
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text style={styles.loadingText}>Pairing...</Text>
             </View>
+          ) : (
+            <>
+              {/* Method selector */}
+              <View style={styles.methodSelector}>
+                <TouchableOpacity
+                  onPress={() => setScanMethod('camera')}
+                  style={[styles.methodButton, scanMethod === 'camera' && styles.methodButtonSelected]}
+                >
+                  <Ionicons name="camera" size={20} color={scanMethod === 'camera' ? COLORS.background : COLORS.primary} />
+                  <Text style={[
+                    styles.methodButtonText,
+                    scanMethod === 'camera' && styles.methodButtonTextSelected,
+                  ]}>
+                    CAMERA
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setScanMethod('manual')}
+                  style={[styles.methodButton, scanMethod === 'manual' && styles.methodButtonSelected]}
+                >
+                  <Ionicons name="clipboard" size={20} color={scanMethod === 'manual' ? COLORS.background : COLORS.primary} />
+                  <Text style={[
+                    styles.methodButtonText,
+                    scanMethod === 'manual' && styles.methodButtonTextSelected,
+                  ]}>
+                    PASTE URL
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+              {/* Camera Scanner */}
+              {scanMethod === 'camera' && (
+                <View style={styles.scannerSection}>
+                  {cameraPermission?.granted ? (
+                    <View style={styles.cameraContainer}>
+                      <CameraView
+                        style={styles.camera}
+                        facing="back"
+                        barcodeScannerSettings={{
+                          barcodeTypes: ['qr'],
+                        }}
+                        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+                      />
+                      <View style={styles.scanOverlay}>
+                        <View style={styles.scanFrame} />
+                      </View>
+                      <Text style={styles.scanInstructions}>
+                        Point camera at QR code
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={styles.permissionContainer}>
+                      <Text style={styles.permissionText}>
+                        Camera permission is required to scan QR codes
+                      </Text>
+                      <TouchableOpacity onPress={requestCameraPermission} style={styles.permissionButton}>
+                        <Text style={styles.permissionButtonText}>Grant Permission</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              )}
 
-            <Pressable onPress={() => setMode('menu')} style={styles.backButton}>
-              <Text style={styles.backButtonText}>BACK</Text>
-            </Pressable>
-          </>
-        )}
+              {/* Manual Input */}
+              {scanMethod === 'manual' && (
+                <View style={styles.manualSection}>
+                  <Text style={styles.manualLabel}>Paste URL from QR scan</Text>
+                  <View style={styles.inputRow}>
+                    <TextInput
+                      style={styles.input}
+                      value={scanUrl}
+                      onChangeText={setScanUrl}
+                      placeholder="Paste URL here (from camera app)"
+                      placeholderTextColor={COLORS.mutedForeground}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    <TouchableOpacity onPress={handlePaste} style={styles.pasteButton}>
+                      <Ionicons name="clipboard" size={20} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.tipText}>
+                    Tip: Use your phone's camera app to scan, then copy the URL and paste here
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => handlePairing(scanUrl)}
+                    style={[styles.pairButton, !scanUrl && styles.pairButtonDisabled]}
+                    disabled={!scanUrl}
+                  >
+                    <Text style={styles.pairButtonText}>PAIR DEVICE</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            </>
+          )}
+        </ScrollView>
       </View>
     );
   }
@@ -367,67 +516,116 @@ export default function SyncScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: COLORS.background,
   },
   content: {
-    padding: 24,
+    padding: 16,
     gap: 16,
+  },
+  infoCard: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 12,
+    backgroundColor: `${COLORS.retroCyan}20`,
+    borderWidth: 2,
+    borderColor: COLORS.retroCyan,
+    borderRadius: 8,
+  },
+  infoContent: {
+    flex: 1,
+  },
+  infoTitle: {
+    fontSize: 8,
+    color: COLORS.retroCyan,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  infoText: {
+    fontSize: 8,
+    color: COLORS.mutedForeground,
+    lineHeight: 12,
+  },
+  infoTextCenter: {
+    fontSize: 8,
+    color: COLORS.retroCyan,
+    textAlign: 'center',
+    lineHeight: 12,
   },
   statusCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
+    padding: 12,
+    borderWidth: 2,
+    borderRadius: 8,
     gap: 8,
   },
   statusCardConnected: {
-    backgroundColor: '#05ffa120',
-    borderWidth: 2,
-    borderColor: '#05ffa1',
+    backgroundColor: `${COLORS.retroGreen}20`,
+    borderColor: COLORS.retroGreen,
   },
   statusCardDisconnected: {
-    backgroundColor: '#ff6b3520',
-    borderWidth: 2,
-    borderColor: '#ff6b35',
+    backgroundColor: `${COLORS.retroOrange}20`,
+    borderColor: COLORS.retroOrange,
   },
   statusCardFlash: {
-    backgroundColor: '#00f0ff30',
-    borderColor: '#00f0ff',
+    backgroundColor: `${COLORS.retroCyan}20`,
+    borderColor: COLORS.retroCyan,
   },
   statusText: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: '600',
   },
   statusTextConnected: {
-    color: '#05ffa1',
+    color: COLORS.retroGreen,
   },
   statusTextDisconnected: {
-    color: '#ff6b35',
+    color: COLORS.retroOrange,
+  },
+  statusTextFlash: {
+    color: COLORS.retroGreen,
   },
   card: {
-    backgroundColor: '#2a2a4e',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 2,
-    borderColor: '#444',
+    backgroundColor: COLORS.card,
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 4,
+    borderColor: COLORS.border,
   },
   cardLabel: {
     fontSize: 12,
-    color: '#888',
+    color: COLORS.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   deviceName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  deviceIdRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   deviceId: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
+    fontSize: 10,
+    color: COLORS.mutedForeground,
+    flex: 1,
+  },
+  copyButton: {
+    padding: 4,
+  },
+  deviceIdHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  shareButton: {
+    padding: 4,
   },
   pairedDevice: {
     flexDirection: 'row',
@@ -435,7 +633,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#3a3a5e',
+    borderBottomColor: COLORS.border,
   },
   deviceInfo: {
     flexDirection: 'row',
@@ -443,8 +641,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   pairedDeviceName: {
-    fontSize: 14,
-    color: '#fff',
+    fontSize: 12,
+    color: COLORS.text,
   },
   onlineIndicator: {
     width: 8,
@@ -452,97 +650,125 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   onlineIndicatorOn: {
-    backgroundColor: '#05ffa1',
+    backgroundColor: COLORS.retroGreen,
   },
   onlineIndicatorOff: {
-    backgroundColor: '#666',
+    backgroundColor: COLORS.border,
+  },
+  deleteButton: {
+    padding: 8,
   },
   actions: {
     gap: 12,
     marginTop: 8,
   },
   actionButton: {
-    backgroundColor: '#ffea00',
+    backgroundColor: COLORS.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 20,
-    borderRadius: 12,
+    borderRadius: 8,
     gap: 12,
   },
   actionButtonSecondary: {
     backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#ffea00',
+    borderWidth: 4,
+    borderColor: COLORS.primary,
   },
   actionButtonDisabled: {
     opacity: 0.5,
   },
   actionButtonText: {
-    color: '#1a1a2e',
-    fontSize: 16,
+    color: COLORS.background,
+    fontSize: 10,
     fontWeight: 'bold',
   },
   actionButtonTextSecondary: {
-    color: '#ffea00',
+    color: COLORS.primary,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 4,
+    borderBottomColor: COLORS.border,
+    backgroundColor: `${COLORS.card}99`,
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginLeft: 8,
+  },
+  generateContent: {
+    padding: 16,
+    gap: 16,
   },
   qrContainer: {
-    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  instructions: {
-    fontSize: 16,
-    color: '#fff',
-    textAlign: 'center',
-    marginBottom: 24,
+    padding: 16,
   },
   qrCode: {
     backgroundColor: '#fff',
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 8,
   },
   expiryText: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 16,
+    fontSize: 10,
+    color: COLORS.mutedForeground,
+    textAlign: 'center',
   },
   errorText: {
-    color: '#ff2a6d',
-    fontSize: 14,
+    color: COLORS.retroMagenta,
+    fontSize: 12,
     textAlign: 'center',
     marginTop: 16,
   },
-  backButton: {
-    margin: 24,
+  scanContent: {
     padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#444',
-    alignItems: 'center',
-  },
-  backButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     gap: 16,
   },
-  loadingText: {
-    color: '#ffea00',
-    fontSize: 16,
+  methodSelector: {
+    flexDirection: 'row',
+    gap: 8,
   },
-  scannerContainer: {
-    height: 300,
-    margin: 24,
-    borderRadius: 12,
+  methodButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderWidth: 4,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.card,
+  },
+  methodButtonSelected: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  methodButtonText: {
+    fontSize: 10,
+    color: COLORS.primary,
+    fontWeight: 'bold',
+  },
+  methodButtonTextSelected: {
+    color: COLORS.background,
+  },
+  scannerSection: {
+    gap: 12,
+  },
+  cameraContainer: {
+    height: 280,
+    borderRadius: 8,
     overflow: 'hidden',
-    position: 'relative',
+    borderWidth: 4,
+    borderColor: COLORS.border,
   },
   camera: {
     flex: 1,
@@ -556,8 +782,7 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderWidth: 2,
-    borderColor: '#ffea00',
-    backgroundColor: 'transparent',
+    borderColor: COLORS.primary,
   },
   scanInstructions: {
     position: 'absolute',
@@ -565,44 +790,39 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     textAlign: 'center',
-    color: '#fff',
-    fontSize: 14,
-    textShadowColor: '#000',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    color: COLORS.text,
+    fontSize: 12,
   },
   permissionContainer: {
-    height: 300,
-    margin: 24,
-    borderRadius: 12,
-    backgroundColor: '#2a2a4e',
+    height: 200,
+    backgroundColor: COLORS.card,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: 16,
     gap: 16,
   },
   permissionText: {
-    color: '#888',
-    fontSize: 14,
+    color: COLORS.mutedForeground,
+    fontSize: 12,
     textAlign: 'center',
   },
   permissionButton: {
-    backgroundColor: '#ffea00',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   permissionButtonText: {
-    color: '#1a1a2e',
+    color: COLORS.background,
     fontWeight: 'bold',
   },
-  manualInput: {
-    margin: 24,
+  manualSection: {
     gap: 12,
   },
   manualLabel: {
-    color: '#888',
-    fontSize: 14,
+    color: COLORS.mutedForeground,
+    fontSize: 10,
   },
   inputRow: {
     flexDirection: 'row',
@@ -610,21 +830,27 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: '#2a2a4e',
+    backgroundColor: COLORS.muted,
+    borderWidth: 4,
+    borderColor: COLORS.border,
     borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#444',
     padding: 12,
-    color: '#fff',
-    fontSize: 14,
+    color: COLORS.text,
+    fontSize: 12,
   },
   pasteButton: {
     padding: 12,
-    backgroundColor: '#3a3a5e',
+    backgroundColor: COLORS.card,
+    borderWidth: 4,
+    borderColor: COLORS.border,
     borderRadius: 8,
   },
+  tipText: {
+    fontSize: 8,
+    color: COLORS.mutedForeground,
+  },
   pairButton: {
-    backgroundColor: '#ffea00',
+    backgroundColor: COLORS.primary,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -633,8 +859,19 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   pairButtonText: {
-    color: '#1a1a2e',
+    color: COLORS.background,
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 14,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+    paddingVertical: 40,
+  },
+  loadingText: {
+    color: COLORS.primary,
+    fontSize: 14,
   },
 });
