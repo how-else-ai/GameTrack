@@ -1,5 +1,5 @@
 // Timer screen for active session (aligned with web app)
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Image } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { useAppStore } from '@/lib/store';
 import { useTimer } from '@/hooks/useTimer';
@@ -7,6 +7,7 @@ import { Kid } from '@game-time-tracker/core';
 import { useState, useCallback, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Theme colors
 const COLORS = {
@@ -24,13 +25,32 @@ const COLORS = {
   text: '#f0f0f0',
 };
 
-// Avatar emoji fallback
-const AVATAR_EMOJIS: Record<string, string> = {
-  'alien-1': '👽', 'alien-2': '👾', 'alien-3': '🛸', 'alien-4': '🚀', 'alien-5': '🌟',
-  'kid-1': '🧒', 'kid-2': '👦', 'kid-3': '👧', 'kid-4': '🧑', 'kid-5': '🏃',
-  'adult-1': '👨', 'adult-2': '🧔', 'adult-3': '👴', 'adult-4': '💪', 'adult-5': '🦸',
-  'animal-1': '🐱', 'animal-2': '🐶', 'animal-3': '🐰', 'animal-4': '🦉', 'animal-5': '🦊',
-};
+// Get avatar image source
+function getAvatarUrl(avatarId: string): any {
+  const avatarMap: Record<string, any> = {
+    'alien-1': require('@/assets/alien-1.png'),
+    'alien-2': require('@/assets/alien-2.png'),
+    'alien-3': require('@/assets/alien-3.png'),
+    'alien-4': require('@/assets/alien-4.png'),
+    'alien-5': require('@/assets/alien-5.png'),
+    'kid-1': require('@/assets/kid-1.png'),
+    'kid-2': require('@/assets/kid-2.png'),
+    'kid-3': require('@/assets/kid-3.png'),
+    'kid-4': require('@/assets/kid-4.png'),
+    'kid-5': require('@/assets/kid-5.png'),
+    'adult-1': require('@/assets/adult-1.png'),
+    'adult-2': require('@/assets/adult-2.png'),
+    'adult-3': require('@/assets/adult-3.png'),
+    'adult-4': require('@/assets/adult-4.png'),
+    'adult-5': require('@/assets/adult-5.png'),
+    'animal-1': require('@/assets/animal-1.png'),
+    'animal-2': require('@/assets/animal-2.png'),
+    'animal-3': require('@/assets/animal-3.png'),
+    'animal-4': require('@/assets/animal-4.png'),
+    'animal-5': require('@/assets/animal-5.png'),
+  };
+  return avatarMap[avatarId] || avatarMap['kid-1'];
+}
 
 function formatTime(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60);
@@ -99,6 +119,7 @@ export default function TimerScreen() {
   const { kidId } = useLocalSearchParams<{ kidId: string }>();
   const kid = useAppStore((state) => state.kids.find((k) => k.id === kidId));
   const { remainingTime, isWarning, isPaused } = useTimer(kidId);
+  const insets = useSafeAreaInsets();
 
   const startSession = useAppStore((state) => state.startSession);
   const pauseSession = useAppStore((state) => state.pauseSession);
@@ -215,7 +236,7 @@ export default function TimerScreen() {
 
   if (!kid) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         <Text style={styles.errorText}>Kid not found</Text>
       </View>
     );
@@ -240,8 +261,8 @@ export default function TimerScreen() {
         }}
       />
       
-      <View style={styles.container}>
-        {/* Header */}
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        {/* Header - with safe area to avoid dynamic island */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={COLORS.text} />
@@ -249,7 +270,11 @@ export default function TimerScreen() {
           
           <View style={styles.headerCenter}>
             <View style={styles.headerAvatar}>
-              <Text style={styles.headerAvatarText}>{AVATAR_EMOJIS[kid.avatarEmoji] || '👤'}</Text>
+              <Image
+                source={getAvatarUrl(kid.avatarEmoji)}
+                style={styles.headerAvatarImage}
+                resizeMode="cover"
+              />
             </View>
             <View>
               <Text style={styles.headerName}>{kid.name}</Text>
@@ -331,7 +356,11 @@ export default function TimerScreen() {
             /* Ticket Selection View */
             <View style={styles.ticketSelectionView}>
               <View style={styles.avatarDisplay}>
-                <Text style={styles.avatarLarge}>{AVATAR_EMOJIS[kid.avatarEmoji] || '👤'}</Text>
+                <Image
+                  source={getAvatarUrl(kid.avatarEmoji)}
+                  style={styles.avatarLarge}
+                  resizeMode="cover"
+                />
               </View>
 
               <View style={styles.ticketsInfo}>
@@ -392,7 +421,7 @@ export default function TimerScreen() {
         </ScrollView>
 
         {/* Footer */}
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
           <TouchableOpacity 
             onPress={() => router.back()}
             style={styles.footerButton}
@@ -472,18 +501,22 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.muted,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
-  headerAvatarText: {
-    fontSize: 20,
+  headerAvatarImage: {
+    width: 40,
+    height: 40,
   },
   headerName: {
     fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.primary,
+    fontFamily: 'PressStart2P',
   },
   headerSubtitle: {
     fontSize: 8,
     color: COLORS.mutedForeground,
+    fontFamily: 'PressStart2P',
   },
   notificationButton: {
     padding: 8,
@@ -510,10 +543,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.primary,
     fontVariant: ['tabular-nums'],
+    fontFamily: 'PressStart2P',
   },
   pausedText: {
     fontSize: 14,
     color: COLORS.mutedForeground,
+    fontFamily: 'PressStart2P',
   },
   progressContainer: {
     width: 200,
@@ -547,6 +582,7 @@ const styles = StyleSheet.create({
     color: COLORS.background,
     fontSize: 10,
     fontWeight: 'bold',
+    fontFamily: 'PressStart2P',
   },
   secondaryButton: {
     backgroundColor: 'transparent',
@@ -562,6 +598,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 10,
     fontWeight: 'bold',
+    fontFamily: 'PressStart2P',
   },
   dangerButton: {
     backgroundColor: 'transparent',
@@ -577,12 +614,14 @@ const styles = StyleSheet.create({
     color: COLORS.retroMagenta,
     fontSize: 10,
     fontWeight: 'bold',
+    fontFamily: 'PressStart2P',
   },
   warningText: {
     fontSize: 10,
     color: COLORS.retroMagenta,
     fontWeight: 'bold',
     textAlign: 'center',
+    fontFamily: 'PressStart2P',
   },
   ticketSelectionView: {
     alignItems: 'center',
@@ -597,9 +636,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.muted,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   avatarLarge: {
-    fontSize: 48,
+    width: 96,
+    height: 96,
   },
   ticketsInfo: {
     alignItems: 'center',
@@ -608,16 +649,19 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: COLORS.mutedForeground,
     marginBottom: 8,
+    fontFamily: 'PressStart2P',
   },
   ticketsInfoValue: {
     fontSize: 36,
     fontWeight: 'bold',
     color: COLORS.primary,
+    fontFamily: 'PressStart2P',
   },
   instructionText: {
     fontSize: 8,
     color: COLORS.mutedForeground,
     textAlign: 'center',
+    fontFamily: 'PressStart2P',
   },
   ticketGrid: {
     flexDirection: 'row',
@@ -641,6 +685,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: COLORS.text,
+    fontFamily: 'PressStart2P',
   },
   ticketButtonNumberUsed: {
     color: COLORS.mutedForeground,
@@ -654,10 +699,12 @@ const styles = StyleSheet.create({
     color: COLORS.retroMagenta,
     fontWeight: 'bold',
     marginBottom: 8,
+    fontFamily: 'PressStart2P',
   },
   noTicketsSubtext: {
     fontSize: 8,
     color: COLORS.mutedForeground,
+    fontFamily: 'PressStart2P',
   },
   ticketsStatus: {
     marginTop: 32,
@@ -668,6 +715,7 @@ const styles = StyleSheet.create({
     color: COLORS.border,
     marginBottom: 12,
     letterSpacing: 2,
+    fontFamily: 'PressStart2P',
   },
   ticketsStatusRow: {
     flexDirection: 'row',
@@ -696,6 +744,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 10,
     fontWeight: 'bold',
+    fontFamily: 'PressStart2P',
   },
   modalOverlay: {
     flex: 1,
@@ -716,11 +765,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.text,
     marginBottom: 12,
+    fontFamily: 'PressStart2P',
   },
   modalText: {
     fontSize: 14,
     color: COLORS.mutedForeground,
     marginBottom: 24,
+    fontFamily: 'PressStart2P',
   },
   modalButtons: {
     flexDirection: 'row',
@@ -741,6 +792,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: COLORS.text,
+    fontFamily: 'PressStart2P',
   },
   modalButtonTextDanger: {
     color: COLORS.background,
@@ -750,5 +802,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     textAlign: 'center',
     marginTop: 40,
+    fontFamily: 'PressStart2P',
   },
 });

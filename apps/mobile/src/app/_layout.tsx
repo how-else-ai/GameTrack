@@ -1,10 +1,11 @@
 // Root layout for Expo Router (aligned with web app)
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { useNotifications } from '@/hooks/useNotifications';
+import * as Font from 'expo-font';
 
 // Theme colors matching web app
 const COLORS = {
@@ -16,6 +17,13 @@ const COLORS = {
 
 function AppInitializer({ children }: { children: React.ReactNode }) {
   const initializeDevice = useAppStore((state) => state.initializeDevice);
+
+  // Load the pixel font
+  useEffect(() => {
+    Font.loadAsync({
+      'PressStart2P': require('@/assets/PressStart2P-Regular.ttf'),
+    });
+  }, []);
 
   useEffect(() => {
     initializeDevice();
