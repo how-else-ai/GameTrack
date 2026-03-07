@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useAppStore } from '@/lib/store';
 import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { Slider } from '@react-native-community/slider';
+import Slider from '@react-native-community/slider';
 import { Kid } from '@game-time-tracker/core';
 
 // Theme colors
@@ -252,7 +252,7 @@ export default function AddKidScreen() {
               maximumValue={DURATION_OPTIONS.length - 1}
               step={1}
               value={durationIndex}
-              onValueChange={(value) => {
+              onValueChange={(value: number) => {
                 const index = Math.round(value);
                 setDurationIndex(index);
                 setTicketDuration(DURATION_OPTIONS[index]);
