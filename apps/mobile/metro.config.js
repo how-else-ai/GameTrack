@@ -19,4 +19,10 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
+// Enable symlinks for Metro to resolve workspace packages
+config.resolver.unstable_enableSymlinks = true;
+
+// Ensure Metro can resolve all workspace dependencies
+config.resolver.disableHierarchicalLookup = false;
+
 module.exports = config;
