@@ -42,7 +42,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     'expo-router',
-    'expo-font',
+    [
+      'expo-font',
+      {
+        fonts: ['./assets/PressStart2P-Regular.ttf'],
+      },
+    ],
     [
       'expo-notifications',
       {
