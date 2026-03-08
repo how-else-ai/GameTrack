@@ -8,6 +8,7 @@ import { Kid } from '@game-time-tracker/core';
 import { useState, useCallback, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Theme colors matching web app
 const COLORS = {
@@ -204,6 +205,7 @@ export default function KidsScreen() {
   const { isConnected, syncStatus, requestFullSync } = useSync();
   const pairedDevices = useAppStore((state) => state.pairedDevices);
   const lastSyncFlash = useAppStore((state) => state.lastSyncFlash);
+  const insets = useSafeAreaInsets();
   
   const [refreshing, setRefreshing] = useState(false);
   const [showSyncFlash, setShowSyncFlash] = useState(false);
@@ -255,8 +257,8 @@ export default function KidsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Header - with safe area top padding */}
+      <View style={[styles.header, { paddingTop: 12 + insets.top }]}>
         <View style={styles.headerLeft}>
           {/* Logo placeholder */}
           <View style={styles.logoContainer}>

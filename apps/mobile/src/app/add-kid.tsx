@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { Kid } from '@game-time-tracker/core';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Theme colors
 const COLORS = {
@@ -89,6 +90,7 @@ function findClosestDuration(minutes: number): number {
 export default function AddKidScreen() {
   const params = useLocalSearchParams();
   const kids = useAppStore((state) => state.kids);
+  const insets = useSafeAreaInsets();
   
   const [name, setName] = useState('');
   const [avatarId, setAvatarId] = useState('kid-1');
@@ -147,8 +149,8 @@ export default function AddKidScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Header - with safe area top padding */}
+      <View style={[styles.header, { paddingTop: 12 + insets.top }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
