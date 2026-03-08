@@ -1,9 +1,8 @@
-// React Native sync hook using the core SyncClient
+// React Native sync hook - aligned with web app implementation
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   SyncClient,
   HttpClient,
-  SyncResponse,
   Kid,
   DeletedKid,
   SYNC_CONSTANTS,
@@ -58,11 +57,32 @@ export function useSync() {
   const lastPollTimeRef = useRef<number>(0);
   const syncDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Refs for immediate state access (prevents stale closures)
+  const deviceIdRef = useRef(deviceId);
+  const deviceNameRef = useRef(deviceName);
+  const authTokenRef = useRef(authToken);
+  const kidsRef = useRef<Kid[]>(kids);
+  const deletedKidsRef = useRef<DeletedKid[]>(deletedKids);
+  const pairedDevicesRef = useRef(pairedDevices);
+
   // Sync client ref
   const syncClientRef = useRef<SyncClient | null>(null);
+  const initAttemptedRef = useRef(false);
 
-  // Initialize sync client
+  // Keep refs updated with current state
   useEffect(() => {
+    deviceIdRef.current = deviceId;
+    deviceNameRef.current = deviceName;
+    authTokenRef.current = authToken;
+    kidsRef.current = kids;
+    deletedKidsRef.current = deletedKids;
+    pairedDevicesRef.current = pairedDevices;
+  }, [deviceId, deviceName, authToken, kids, deletedKids, pairedDevices]);
+
+  // Initialize sync client once (with refs that always have current values)
+  useEffect(() => {
+    if (syncClientRef.current) return; // Already initialized
+
     syncClientRef.current = new SyncClient(
       nativeHttpClient,
       {
@@ -85,13 +105,14 @@ export function useSync() {
         },
       },
       {
+        // Use refs to always get current values - prevents stale closure issues
         getState: () => ({
-          deviceId,
-          deviceName,
-          authToken,
-          kids,
-          pairedDevices,
-          deletedKids,
+          deviceId: deviceIdRef.current,
+          deviceName: deviceNameRef.current,
+          authToken: authTokenRef.current,
+          kids: kidsRef.current,
+          pairedDevices: pairedDevicesRef.current,
+          deletedKids: deletedKidsRef.current,
         }),
         setAuthToken: (token) => {
           setAuthToken(token);
@@ -103,29 +124,48 @@ export function useSync() {
         updateDeviceOnline,
       }
     );
-  }, []);
+  }, [mergeKidsData, setDeletedKids, removePairedDevice, triggerSyncFlash, setAuthToken, addPairedDevice, updateDeviceOnline]);
 
   // Initialize sync when deviceId is available
   useEffect(() => {
-    if (!deviceId || !syncClientRef.current) return;
+    // Don't run if already attempted or no deviceId or no client
+    if (initAttemptedRef.current || !deviceId || !syncClientRef.current) return;
 
     let mounted = true;
+    initAttemptedRef.current = true;
 
     const init = async () => {
       const client = syncClientRef.current!;
+      console.log('[SYNC] Initializing with deviceId:', deviceId.substring(0, 8));
+
       const success = await client.register();
-      if (!success || !mounted) return;
+      if (!success || !mounted) {
+        if (!success) {
+          console.error('[SYNC] Registration failed');
+          setSyncStatus('error');
+        }
+        initAttemptedRef.current = false; // Allow retry
+        return;
+      }
+
+      console.log('[SYNC] Connected successfully');
+      setIsConnected(true);
+      setIsRegistered(true);
 
       await client.heartbeat();
 
       // Regular polling
       pollIntervalRef.current = setInterval(async () => {
-        lastPollTimeRef.current = await client.poll(lastPollTimeRef.current);
+        if (syncClientRef.current) {
+          lastPollTimeRef.current = await syncClientRef.current.poll(lastPollTimeRef.current);
+        }
       }, SYNC_CONSTANTS.POLL_INTERVAL);
 
       // Heartbeat
       heartbeatIntervalRef.current = setInterval(async () => {
-        await client.heartbeat();
+        if (syncClientRef.current) {
+          await syncClientRef.current.heartbeat();
+        }
       }, SYNC_CONSTANTS.HEARTBEAT_INTERVAL);
 
       await client.fetchPairedDevices();
@@ -155,10 +195,12 @@ export function useSync() {
     }
 
     syncDebounceRef.current = setTimeout(() => {
-      client.pushEvent('KIDS_UPDATE', {
-        kids,
-        deletedKids,
-      });
+      if (syncClientRef.current) {
+        syncClientRef.current.pushEvent('KIDS_UPDATE', {
+          kids,
+          deletedKids,
+        });
+      }
     }, SYNC_CONSTANTS.BROADCAST_DEBOUNCE);
   }, [kids, deletedKids, isConnected, pairedDevices.length]);
 
