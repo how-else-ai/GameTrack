@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { Kid } from '@game-time-tracker/core';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Theme colors
 const COLORS = {
@@ -28,34 +29,34 @@ interface AvatarInfo {
   id: string;
   name: string;
   category: AvatarCategory;
-  emoji: string;
+  image: any;
 }
 
 const AVATARS: AvatarInfo[] = [
   // Aliens
-  { id: 'alien-1', name: 'Zorg', category: 'alien', emoji: '👽' },
-  { id: 'alien-2', name: 'Blip', category: 'alien', emoji: '👾' },
-  { id: 'alien-3', name: 'Gloop', category: 'alien', emoji: '🛸' },
-  { id: 'alien-4', name: 'Nova', category: 'alien', emoji: '🚀' },
-  { id: 'alien-5', name: 'Zyx', category: 'alien', emoji: '🌟' },
+  { id: 'alien-1', name: 'Zorg', category: 'alien', image: require('@assets/alien-1.png') },
+  { id: 'alien-2', name: 'Blip', category: 'alien', image: require('@assets/alien-2.png') },
+  { id: 'alien-3', name: 'Gloop', category: 'alien', image: require('@assets/alien-3.png') },
+  { id: 'alien-4', name: 'Nova', category: 'alien', image: require('@assets/alien-4.png') },
+  { id: 'alien-5', name: 'Zyx', category: 'alien', image: require('@assets/alien-5.png') },
   // Kids
-  { id: 'kid-1', name: 'Spike', category: 'kid', emoji: '🧒' },
-  { id: 'kid-2', name: 'Pip', category: 'kid', emoji: '👦' },
-  { id: 'kid-3', name: 'Ace', category: 'kid', emoji: '👧' },
-  { id: 'kid-4', name: 'Sunny', category: 'kid', emoji: '🧑' },
-  { id: 'kid-5', name: 'Dot', category: 'kid', emoji: '🏃' },
+  { id: 'kid-1', name: 'Spike', category: 'kid', image: require('@assets/kid-1.png') },
+  { id: 'kid-2', name: 'Pip', category: 'kid', image: require('@assets/kid-2.png') },
+  { id: 'kid-3', name: 'Ace', category: 'kid', image: require('@assets/kid-3.png') },
+  { id: 'kid-4', name: 'Sunny', category: 'kid', image: require('@assets/kid-4.png') },
+  { id: 'kid-5', name: 'Dot', category: 'kid', image: require('@assets/kid-5.png') },
   // Adults
-  { id: 'adult-1', name: 'Dash', category: 'adult', emoji: '👨' },
-  { id: 'adult-2', name: 'Spark', category: 'adult', emoji: '🧔' },
-  { id: 'adult-3', name: 'Beard', category: 'adult', emoji: '👴' },
-  { id: 'adult-4', name: 'Blaze', category: 'adult', emoji: '💪' },
-  { id: 'adult-5', name: 'Tank', category: 'adult', emoji: '🦸' },
+  { id: 'adult-1', name: 'Dash', category: 'adult', image: require('@assets/adult-1.png') },
+  { id: 'adult-2', name: 'Spark', category: 'adult', image: require('@assets/adult-2.png') },
+  { id: 'adult-3', name: 'Beard', category: 'adult', image: require('@assets/adult-3.png') },
+  { id: 'adult-4', name: 'Blaze', category: 'adult', image: require('@assets/adult-4.png') },
+  { id: 'adult-5', name: 'Tank', category: 'adult', image: require('@assets/adult-5.png') },
   // Animals
-  { id: 'animal-1', name: 'Whiskers', category: 'animal', emoji: '🐱' },
-  { id: 'animal-2', name: 'Rover', category: 'animal', emoji: '🐶' },
-  { id: 'animal-3', name: 'Hop', category: 'animal', emoji: '🐰' },
-  { id: 'animal-4', name: 'Hoot', category: 'animal', emoji: '🦉' },
-  { id: 'animal-5', name: 'Ember', category: 'animal', emoji: '🦊' },
+  { id: 'animal-1', name: 'Whiskers', category: 'animal', image: require('@assets/animal-1.png') },
+  { id: 'animal-2', name: 'Rover', category: 'animal', image: require('@assets/animal-2.png') },
+  { id: 'animal-3', name: 'Hop', category: 'animal', image: require('@assets/animal-3.png') },
+  { id: 'animal-4', name: 'Hoot', category: 'animal', image: require('@assets/animal-4.png') },
+  { id: 'animal-5', name: 'Ember', category: 'animal', image: require('@assets/animal-5.png') },
 ];
 
 const CATEGORIES: AvatarCategory[] = ['alien', 'kid', 'adult', 'animal'];
@@ -89,6 +90,7 @@ function findClosestDuration(minutes: number): number {
 export default function AddKidScreen() {
   const params = useLocalSearchParams();
   const kids = useAppStore((state) => state.kids);
+  const insets = useSafeAreaInsets();
   
   const [name, setName] = useState('');
   const [avatarId, setAvatarId] = useState('kid-1');
@@ -147,8 +149,8 @@ export default function AddKidScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Header - with safe area top padding */}
+      <View style={[styles.header, { paddingTop: 12 + insets.top }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
@@ -199,7 +201,7 @@ export default function AddKidScreen() {
           </View>
         </View>
 
-        {/* Avatar Selection */}
+        {/* Avatar Selection - Using images instead of emojis */}
         <View style={styles.section}>
           <Text style={styles.label}>Avatar</Text>
           <View style={styles.avatarGrid}>
@@ -212,7 +214,11 @@ export default function AddKidScreen() {
                   avatarId === avatar.id && styles.avatarButtonSelected,
                 ]}
               >
-                <Text style={styles.avatarEmoji}>{avatar.emoji}</Text>
+                <Image
+                  source={avatar.image}
+                  style={styles.avatarImage}
+                  resizeMode="cover"
+                />
               </TouchableOpacity>
             ))}
           </View>
@@ -317,6 +323,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.primary,
     marginLeft: 8,
+    fontFamily: 'PressStart2P',
   },
   scrollView: {
     flex: 1,
@@ -333,6 +340,7 @@ const styles = StyleSheet.create({
     color: COLORS.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 1,
+    fontFamily: 'PressStart2P',
   },
   input: {
     backgroundColor: COLORS.muted,
@@ -342,6 +350,7 @@ const styles = StyleSheet.create({
     padding: 16,
     color: COLORS.text,
     fontSize: 16,
+    fontFamily: 'PressStart2P',
   },
   categoryGrid: {
     flexDirection: 'row',
@@ -364,6 +373,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: COLORS.mutedForeground,
     fontWeight: '600',
+    fontFamily: 'PressStart2P',
   },
   categoryButtonTextSelected: {
     color: COLORS.primary,
@@ -381,13 +391,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   avatarButtonSelected: {
     borderColor: COLORS.primary,
     backgroundColor: `${COLORS.primary}20`,
   },
-  avatarEmoji: {
-    fontSize: 32,
+  avatarImage: {
+    width: 60,
+    height: 60,
   },
   sliderHeader: {
     flexDirection: 'row',
@@ -398,6 +410,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: COLORS.primary,
     fontWeight: 'bold',
+    fontFamily: 'PressStart2P',
   },
   sliderContainer: {
     backgroundColor: COLORS.muted,
@@ -418,6 +431,7 @@ const styles = StyleSheet.create({
   durationLabel: {
     fontSize: 6,
     color: COLORS.mutedForeground,
+    fontFamily: 'PressStart2P',
   },
   buttons: {
     flexDirection: 'row',
@@ -436,6 +450,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.text,
+    fontFamily: 'PressStart2P',
   },
   saveButton: {
     flex: 1,
@@ -450,5 +465,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.background,
+    fontFamily: 'PressStart2P',
   },
 });

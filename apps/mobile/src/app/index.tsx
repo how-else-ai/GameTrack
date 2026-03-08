@@ -1,5 +1,5 @@
 // Main screen - Kids list (aligned with web app)
-import { View, Text, StyleSheet, FlatList, Pressable, RefreshControl, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, RefreshControl, TouchableOpacity, Animated, Image } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useAppStore } from '@/lib/store';
 import { useTimer } from '@/hooks/useTimer';
@@ -7,6 +7,8 @@ import { useSync } from '@/hooks/useSync';
 import { Kid } from '@game-time-tracker/core';
 import { useState, useCallback, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { useFonts } from 'expo-font';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Theme colors matching web app
 const COLORS = {
@@ -24,13 +26,33 @@ const COLORS = {
   text: '#f0f0f0',
 };
 
-// Avatar emoji fallback (should use pixel art images ideally)
-const AVATAR_EMOJIS: Record<string, string> = {
-  'alien-1': '👽', 'alien-2': '👾', 'alien-3': '🛸', 'alien-4': '🚀', 'alien-5': '🌟',
-  'kid-1': '🧒', 'kid-2': '👦', 'kid-3': '👧', 'kid-4': '🧑', 'kid-5': '🏃',
-  'adult-1': '👨', 'adult-2': '🧔', 'adult-3': '👴', 'adult-4': '💪', 'adult-5': '🦸',
-  'animal-1': '🐱', 'animal-2': '🐶', 'animal-3': '🐰', 'animal-4': '🦉', 'animal-5': '🦊',
-};
+// Get avatar image source
+function getAvatarUrl(avatarId: string): any {
+  // Map avatar IDs to local assets
+  const avatarMap: Record<string, any> = {
+    'alien-1': require('@assets/alien-1.png'),
+    'alien-2': require('@assets/alien-2.png'),
+    'alien-3': require('@assets/alien-3.png'),
+    'alien-4': require('@assets/alien-4.png'),
+    'alien-5': require('@assets/alien-5.png'),
+    'kid-1': require('@assets/kid-1.png'),
+    'kid-2': require('@assets/kid-2.png'),
+    'kid-3': require('@assets/kid-3.png'),
+    'kid-4': require('@assets/kid-4.png'),
+    'kid-5': require('@assets/kid-5.png'),
+    'adult-1': require('@assets/adult-1.png'),
+    'adult-2': require('@assets/adult-2.png'),
+    'adult-3': require('@assets/adult-3.png'),
+    'adult-4': require('@assets/adult-4.png'),
+    'adult-5': require('@assets/adult-5.png'),
+    'animal-1': require('@assets/animal-1.png'),
+    'animal-2': require('@assets/animal-2.png'),
+    'animal-3': require('@assets/animal-3.png'),
+    'animal-4': require('@assets/animal-4.png'),
+    'animal-5': require('@assets/animal-5.png'),
+  };
+  return avatarMap[avatarId] || avatarMap['kid-1'];
+}
 
 function formatTime(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60);
@@ -89,9 +111,13 @@ function KidCard({ kid, onPress, onEdit, onDelete, onResetTickets }: {
           pressed && styles.cardPressed,
         ]}
       >
-        {/* Avatar */}
+        {/* Avatar - Using image instead of emoji */}
         <TouchableOpacity onPress={onPress} style={styles.avatarContainer}>
-          <Text style={styles.avatar}>{AVATAR_EMOJIS[kid.avatarEmoji] || '👤'}</Text>
+          <Image
+            source={getAvatarUrl(kid.avatarEmoji)}
+            style={styles.avatar}
+            resizeMode="cover"
+          />
         </TouchableOpacity>
 
         {/* Info */}
@@ -179,6 +205,7 @@ export default function KidsScreen() {
   const { isConnected, syncStatus, requestFullSync } = useSync();
   const pairedDevices = useAppStore((state) => state.pairedDevices);
   const lastSyncFlash = useAppStore((state) => state.lastSyncFlash);
+  const insets = useSafeAreaInsets();
   
   const [refreshing, setRefreshing] = useState(false);
   const [showSyncFlash, setShowSyncFlash] = useState(false);
@@ -230,8 +257,8 @@ export default function KidsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Header - with safe area top padding */}
+      <View style={[styles.header, { paddingTop: 12 + insets.top }]}>
         <View style={styles.headerLeft}>
           {/* Logo placeholder */}
           <View style={styles.logoContainer}>
@@ -406,11 +433,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.primary,
     letterSpacing: 1,
+    fontFamily: 'PressStart2P',
   },
   headerTitle2: {
     fontSize: 8,
     color: COLORS.mutedForeground,
     letterSpacing: 1,
+    fontFamily: 'PressStart2P',
   },
   headerRight: {
     flexDirection: 'row',
@@ -438,6 +467,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: COLORS.mutedForeground,
     fontWeight: '600',
+    fontFamily: 'PressStart2P',
   },
   syncButtonTextFlash: {
     color: COLORS.retroGreen,
@@ -466,6 +496,7 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     marginBottom: 8,
     letterSpacing: 1,
+    fontFamily: 'PressStart2P',
   },
   emptyText: {
     fontSize: 10,
@@ -473,6 +504,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 32,
     maxWidth: 300,
+    fontFamily: 'PressStart2P',
   },
   addButton: {
     backgroundColor: COLORS.primary,
@@ -486,6 +518,7 @@ const styles = StyleSheet.create({
     color: COLORS.background,
     fontSize: 14,
     fontWeight: 'bold',
+    fontFamily: 'PressStart2P',
   },
   list: {
     padding: 16,
@@ -522,9 +555,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.muted,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   avatar: {
-    fontSize: 28,
+    width: 56,
+    height: 56,
   },
   cardInfo: {
     flex: 1,
@@ -534,6 +569,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.text,
     marginBottom: 4,
+    fontFamily: 'PressStart2P',
   },
   ticketInfo: {
     flexDirection: 'row',
@@ -544,6 +580,7 @@ const styles = StyleSheet.create({
   ticketCount: {
     fontSize: 8,
     color: COLORS.mutedForeground,
+    fontFamily: 'PressStart2P',
   },
   activeSession: {
     marginTop: 8,
@@ -557,6 +594,7 @@ const styles = StyleSheet.create({
   sessionStatus: {
     fontSize: 8,
     color: COLORS.primary,
+    fontFamily: 'PressStart2P',
   },
   sessionStatusWarning: {
     color: COLORS.retroMagenta,
@@ -568,6 +606,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: COLORS.primary,
+    fontFamily: 'PressStart2P',
   },
   sessionTimeWarning: {
     color: COLORS.retroMagenta,
@@ -603,6 +642,7 @@ const styles = StyleSheet.create({
   ticketDotText: {
     fontSize: 6,
     fontWeight: 'bold',
+    fontFamily: 'PressStart2P',
   },
   resetButton: {
     padding: 4,
@@ -624,6 +664,7 @@ const styles = StyleSheet.create({
     color: COLORS.background,
     fontSize: 10,
     fontWeight: 'bold',
+    fontFamily: 'PressStart2P',
   },
   quickActions: {
     gap: 4,
@@ -673,12 +714,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.text,
     marginBottom: 12,
+    fontFamily: 'PressStart2P',
   },
   modalText: {
     fontSize: 14,
     color: COLORS.mutedForeground,
     marginBottom: 24,
     lineHeight: 20,
+    fontFamily: 'PressStart2P',
   },
   modalButtons: {
     flexDirection: 'row',
@@ -699,6 +742,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: COLORS.text,
+    fontFamily: 'PressStart2P',
   },
   modalButtonTextDanger: {
     color: COLORS.background,

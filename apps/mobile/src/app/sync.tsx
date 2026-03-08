@@ -9,6 +9,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Clipboard from 'expo-clipboard';
 import QRCode from 'qrcode';
 import { SvgXml } from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Theme colors
 const COLORS = {
@@ -36,6 +37,7 @@ export default function SyncScreen() {
   const [error, setError] = useState('');
   const [scanned, setScanned] = useState(false);
   const [scanMethod, setScanMethod] = useState<'camera' | 'manual'>('manual');
+  const insets = useSafeAreaInsets();
 
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
 
@@ -241,7 +243,7 @@ export default function SyncScreen() {
   // Menu view
   if (mode === 'menu') {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={[styles.container, { paddingTop: insets.top }]} contentContainerStyle={styles.content}>
         {/* How it works */}
         <View style={styles.infoCard}>
           <Ionicons name="swap-horizontal" size={16} color={COLORS.retroCyan} />
@@ -336,7 +338,7 @@ export default function SyncScreen() {
   // Generate QR view
   if (mode === 'generate') {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={resetState} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={COLORS.text} />
@@ -387,7 +389,7 @@ export default function SyncScreen() {
   // Scan view
   if (mode === 'scan') {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={resetState} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={COLORS.text} />
