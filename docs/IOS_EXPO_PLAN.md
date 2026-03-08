@@ -173,6 +173,26 @@ xcodebuild -workspace GameTimeTracker.xcworkspace -scheme GameTimeTracker -confi
 - 1-second update interval (battery optimized)
 - Calculates remaining time using core utilities
 - Progress bar for visual feedback
+- Uses shared `@game-time-tracker/core` timer utilities (`calculateRemainingTime`, `isWarningState`)
+
+## Visual Alignment with Web App
+
+The mobile app has been updated to match the web app's 80s retro aesthetic:
+
+### 1. 8-bit Font (Press Start 2P)
+- Added `PressStart2P-Regular.ttf` to mobile assets
+- Configured expo-font plugin in `app.config.ts`
+- Font loaded in `_layout.tsx` using `expo-font`
+- Applied to all text elements for consistent retro look
+
+### 2. Avatar Images
+- Added 20 pixel art PNG images (alien-1 through animal-5)
+- Replaced emoji-based avatars with Image components
+- Uses `require()` for local asset loading
+
+### 3. Timer Screen Safe Area
+- Added `useSafeAreaInsets` from `react-native-safe-area-context`
+- Applied padding to prevent content from being covered by iPhone dynamic island
 
 ## Test Cases
 
@@ -270,3 +290,20 @@ xcodebuild -workspace GameTimeTracker.xcworkspace -scheme GameTimeTracker -confi
 **G2 – Privacy labels**
 - **Steps:** Review app data collection settings in App Store Connect.
 - **Expected:** Labels accurately reflect storage/sync behavior.
+
+### H. Visual Alignment (Mobile-Web Parity)
+**H1 – 8-bit Font**
+- **Steps:** Open any screen in mobile app.
+- **Expected:** Text displays in Press Start 2P pixel font, matching web app.
+
+**H2 – Avatar Images**
+- **Steps:** View kid cards or avatar selection in add-kid screen.
+- **Expected:** Avatar displays as pixel art image, not emoji.
+
+**H3 – Dynamic Island Safe Area**
+- **Steps:** Open timer screen on iPhone 14 Pro or newer.
+- **Expected:** Header content not covered by dynamic island.
+
+**H4 – Timer Countdown**
+- **Steps:** Start a session, observe timer on kid card and timer screen.
+- **Expected:** Timer updates every second on both screens, matching web app behavior.
