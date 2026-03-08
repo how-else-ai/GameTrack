@@ -21,7 +21,7 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
   // Load the pixel font
   useEffect(() => {
     Font.loadAsync({
-      'PressStart2P': require('@/assets/PressStart2P-Regular.ttf'),
+      'PressStart2P': require('@assets/PressStart2P-Regular.ttf'),
     });
   }, []);
 

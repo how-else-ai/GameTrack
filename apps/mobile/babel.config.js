@@ -9,9 +9,10 @@ module.exports = function (api) {
           root: ['./'],
           alias: {
             '@': './src',
+            '@assets': './assets',
             '@game-time-tracker/core': '../../packages/core/src',
           },
-          extensions: ['.js', '.jsx', '.ts', '.tsx'],
+          extensions: ['.js', '.jsx', '.ts', '.tsx', '.ttf', '.png'],
         },
       ],
     ],
