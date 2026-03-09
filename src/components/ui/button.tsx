@@ -26,9 +26,9 @@ const buttonVariants = cva(
           "border-4 border-primary bg-transparent text-primary shadow-[0_0_10px_var(--retro-yellow)] hover:bg-primary/20 hover:shadow-[0_0_20px_var(--retro-yellow)]",
       },
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        sm: "h-8 gap-1.5 px-3 has-[>svg]:px-2.5",
-        lg: "h-12 px-6 has-[>svg]:px-4",
+        default: "h-9 px-4 py-2 has-[>svg]:px-3 min-w-fit",
+        sm: "h-8 gap-1.5 px-3 has-[>svg]:px-2.5 min-w-fit",
+        lg: "h-12 px-6 has-[>svg]:px-4 min-w-fit",
         icon: "size-9",
       },
     },

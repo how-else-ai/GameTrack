@@ -138,17 +138,17 @@ export default function Home() {
   const onlineDevices = pairedDevices.filter(d => d.isOnline).length;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col no-select scanlines relative">
+    <div className="min-h-screen bg-background flex flex-col no-select relative">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b-4 border-border">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="w-full px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <img
               src="/logo.png"
               alt="Game Time Tracker"
               className="w-10 h-10"
             />
-            <div>
+            <div className="min-w-0">
               <h1 className="font-pixel text-[10px] text-primary uppercase tracking-wider">Game Time</h1>
               <p className="text-[8px] font-pixel text-muted-foreground uppercase">Tracker</p>
             </div>
@@ -196,7 +196,7 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-md mx-auto w-full px-4 py-6">
+      <main className="flex-1 w-full px-4 py-6 max-w-full sm:max-w-md sm:mx-auto">
         {/* Loading State */}
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -216,12 +216,12 @@ export default function Home() {
                 <p className="font-pixel text-[10px] text-muted-foreground mb-8 max-w-xs uppercase">
                   Add your first kid to start tracking their gaming time with tickets
                 </p>
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   variant="arcade"
                   onClick={() => setShowAddDialog(true)}
                 >
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className="mr-2 h-4 w-4 flex-shrink-0" />
                   ADD PLAYER
                 </Button>
               </motion.div>
@@ -253,8 +253,8 @@ export default function Home() {
 
       {/* Footer with Add Button */}
       {kids.length > 0 && (
-        <footer className="sticky bottom-0 bg-card/95 backdrop-blur-sm border-t-4 border-border safe-area-bottom">
-          <div className="max-w-md mx-auto px-4 py-3">
+        <footer className="sticky bottom-0 bg-card/95 backdrop-blur-sm border-t-4 border-border safe-area-bottom z-10">
+          <div className="w-full px-4 py-3">
             <Button
               variant="arcade"
               className="w-full"
@@ -264,7 +264,7 @@ export default function Home() {
                 setShowAddDialog(true);
               }}
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 h-4 w-4 flex-shrink-0" />
               ADD PLAYER
             </Button>
           </div>

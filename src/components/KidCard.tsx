@@ -70,7 +70,7 @@ export function KidCard({ kid, onSelect, onEdit, onDelete, onResetTickets }: Kid
             <div className="flex-1 min-w-0">
               <h3 className="font-pixel text-xs text-primary truncate uppercase">{kid.name}</h3>
               <div className="flex items-center gap-2 mt-1">
-                <Ticket className="h-3 w-3 text-muted-foreground" />
+                <Ticket className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                 <span className="font-pixel text-[8px] text-muted-foreground">
                   {availableTickets} / {kid.ticketLimit} left
                 </span>
@@ -175,7 +175,7 @@ export function KidCard({ kid, onSelect, onEdit, onDelete, onResetTickets }: Kid
               className="w-full mt-3 font-pixel text-[10px]"
               onClick={() => onSelect(kid)}
             >
-              <Play className="mr-2 h-4 w-4" />
+              <Play className="mr-2 h-4 w-4 flex-shrink-0" />
               Play
             </Button>
           )}
