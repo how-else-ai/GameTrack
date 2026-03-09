@@ -171,13 +171,13 @@
   bottom: 0;
   background: repeating-linear-gradient(
     0deg,
-    rgba(0, 0, 0, 0.1),
-    rgba(0, 0, 0, 0.1) 1px,
+    rgba(0, 0, 0, 0.05),
+    rgba(0, 0, 0, 0.05) 1px,
     transparent 1px,
     transparent 2px
   );
   pointer-events: none;
-  z-index: 100;
+  z-index: 1;
 }
 
 /* Custom scrollbar */
