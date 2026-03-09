@@ -148,9 +148,9 @@ export default function AddKidScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header - with safe area top padding */}
-      <View style={[styles.header, { paddingTop: 12 + insets.top }]}>
+      <View style={[styles.header, { paddingTop: 12 }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
@@ -159,7 +159,7 @@ export default function AddKidScreen() {
         </Text>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
         {/* Name */}
         <View style={styles.section}>
           <Text style={styles.label}>Name</Text>

@@ -243,7 +243,7 @@ export default function SyncScreen() {
   // Menu view
   if (mode === 'menu') {
     return (
-      <ScrollView style={[styles.container, { paddingTop: insets.top }]} contentContainerStyle={styles.content}>
+      <ScrollView style={[styles.container, { paddingTop: insets.top }]} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
         {/* How it works */}
         <View style={styles.infoCard}>
           <Ionicons name="swap-horizontal" size={16} color={COLORS.retroCyan} />
@@ -346,7 +346,7 @@ export default function SyncScreen() {
           <Text style={styles.headerTitle}>Show QR Code</Text>
         </View>
 
-        <ScrollView contentContainerStyle={styles.generateContent}>
+        <ScrollView contentContainerStyle={[styles.generateContent, { paddingBottom: insets.bottom + 24 }]}>
           {/* Instructions */}
           <View style={styles.infoCard}>
             <Text style={styles.infoTextCenter}>
@@ -397,7 +397,7 @@ export default function SyncScreen() {
           <Text style={styles.headerTitle}>Scan QR Code</Text>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scanContent}>
+        <ScrollView contentContainerStyle={[styles.scanContent, { paddingBottom: insets.bottom + 24 }]}>
           {/* Instructions */}
           <View style={styles.infoCard}>
             <Text style={styles.infoTextCenter}>

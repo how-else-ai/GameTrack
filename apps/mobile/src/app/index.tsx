@@ -256,9 +256,9 @@ export default function KidsScreen() {
   const onlineDevices = pairedDevices.filter(d => d.isOnline).length;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header - with safe area top padding */}
-      <View style={[styles.header, { paddingTop: 12 + insets.top }]}>
+      <View style={[styles.header, { paddingTop: 12 }]}>
         <View style={styles.headerLeft}>
           {/* Logo placeholder */}
           <View style={styles.logoContainer}>
@@ -352,7 +352,7 @@ export default function KidsScreen() {
 
       {/* Footer with Add Button */}
       {kids.length > 0 && (
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
           <TouchableOpacity 
             onPress={() => {
               setEditingKid(null);

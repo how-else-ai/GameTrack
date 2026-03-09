@@ -532,6 +532,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     minHeight: '100%',
+    paddingBottom: 100,
   },
   activeSessionView: {
     alignItems: 'center',
