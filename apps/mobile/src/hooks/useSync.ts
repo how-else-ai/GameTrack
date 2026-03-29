@@ -1,9 +1,8 @@
-// React Native sync hook using the core SyncClient
+// React Native sync hook using the core SyncClient - Aligned with web app
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   SyncClient,
   HttpClient,
-  SyncResponse,
   Kid,
   DeletedKid,
   SYNC_CONSTANTS,
@@ -29,7 +28,7 @@ const nativeHttpClient: HttpClient = {
 type SyncStatus = 'idle' | 'syncing' | 'error';
 
 export function useSync() {
-  // Store state
+  // Store state - get all values including authToken
   const {
     deviceId,
     deviceName,
@@ -43,7 +42,7 @@ export function useSync() {
     mergeKidsData,
     setDeletedKids,
     triggerSyncFlash,
-    setAuthToken,
+    setAuthToken: setStoreAuthToken,
   } = useAppStore();
 
   // Local state
@@ -58,10 +57,23 @@ export function useSync() {
   const lastPollTimeRef = useRef<number>(0);
   const syncDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Auth token ref for immediate access (like web app)
+  const authTokenRef = useRef<string | null>(null);
+
   // Sync client ref
   const syncClientRef = useRef<SyncClient | null>(null);
 
-  // Initialize sync client
+  // Keep authTokenRef in sync with store
+  useEffect(() => {
+    authTokenRef.current = authToken;
+    // If we have an authToken, we're registered and connected
+    if (authToken && !isRegistered) {
+      setIsRegistered(true);
+      setIsConnected(true);
+    }
+  }, [authToken, isRegistered]);
+
+  // Initialize sync client once
   useEffect(() => {
     syncClientRef.current = new SyncClient(
       nativeHttpClient,
@@ -79,6 +91,7 @@ export function useSync() {
         onError: (error) => {
           console.error('[SYNC] Error:', error);
           setSyncStatus('error');
+          setIsConnected(false);
         },
         onSyncFlash: () => {
           triggerSyncFlash();
@@ -88,13 +101,14 @@ export function useSync() {
         getState: () => ({
           deviceId,
           deviceName,
-          authToken,
+          authToken: authTokenRef.current || '',
           kids,
           pairedDevices,
           deletedKids,
         }),
         setAuthToken: (token) => {
-          setAuthToken(token);
+          setStoreAuthToken(token);
+          authTokenRef.current = token;
           setIsRegistered(true);
           setIsConnected(true);
         },
@@ -103,7 +117,7 @@ export function useSync() {
         updateDeviceOnline,
       }
     );
-  }, []);
+  }, []); // Empty array - create client once
 
   // Initialize sync when deviceId is available
   useEffect(() => {
@@ -113,17 +127,25 @@ export function useSync() {
 
     const init = async () => {
       const client = syncClientRef.current!;
+
+      // Register if not already registered
       const success = await client.register();
       if (!success || !mounted) return;
 
+      // Update connection states
+      if (mounted) {
+        setIsRegistered(true);
+        setIsConnected(true);
+      }
+
       await client.heartbeat();
 
-      // Regular polling
+      // Regular polling every 2 seconds
       pollIntervalRef.current = setInterval(async () => {
         lastPollTimeRef.current = await client.poll(lastPollTimeRef.current);
       }, SYNC_CONSTANTS.POLL_INTERVAL);
 
-      // Heartbeat
+      // Heartbeat every 10 seconds
       heartbeatIntervalRef.current = setInterval(async () => {
         await client.heartbeat();
       }, SYNC_CONSTANTS.HEARTBEAT_INTERVAL);
@@ -131,6 +153,7 @@ export function useSync() {
       await client.fetchPairedDevices();
     };
 
+    console.log('[SYNC] Initializing with deviceId:', deviceId?.substring(0, 8));
     init();
 
     return () => {
@@ -142,7 +165,7 @@ export function useSync() {
     };
   }, [deviceId]);
 
-  // Broadcast on kids change
+  // Broadcast on kids change - with debouncing
   useEffect(() => {
     if (!isConnected || pairedDevices.length === 0 || !syncClientRef.current) return;
 
