@@ -512,7 +512,7 @@ apps/mobile/src/
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/how-else-ai/GameTrack
 cd game-time-tracker
 
 # Install dependencies with Bun (recommended)
