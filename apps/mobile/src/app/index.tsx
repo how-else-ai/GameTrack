@@ -256,9 +256,9 @@ export default function KidsScreen() {
   const onlineDevices = pairedDevices.filter(d => d.isOnline).length;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
       {/* Header - with safe area top padding */}
-      <View style={[styles.header, { paddingTop: 12 }]}>
+      <View style={[styles.header, { paddingTop: 12 + insets.top }]}>
         <View style={styles.headerLeft}>
           {/* Logo placeholder */}
           <View style={styles.logoContainer}>
