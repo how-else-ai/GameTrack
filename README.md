@@ -5,7 +5,7 @@ A retro-styled gaming time management application for parents to track and contr
 ![Game Time Tracker](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8?style=for-the-badge&logo=tailwind-css)
-![Expo](https://img.shields.io/badge/Expo-52.0-000020?style=for-the-badge&logo=expo)
+![Expo](https://img.shields.io/badge/Expo-55.0-000020?style=for-the-badge&logo=expo)
 ![iOS](https://img.shields.io/badge/iOS-16+-000000?style=for-the-badge&logo=ios)
 
 > **Now available as a Web App and native iOS App!** The iOS app provides reliable timer notifications even when the app is closed. See [iOS Expo Plan](./docs/IOS_EXPO_PLAN.md) for details.
@@ -447,7 +447,8 @@ game-time-tracker/
 ├── docs/
 │   ├── IOS_EXPO_PLAN.md         # iOS implementation plan
 │   ├── IPAD_TESTING_GUIDE.md    # Testing on physical iPad
-│   └── SYNC_SYSTEM.md           # Sync system documentation
+│   ├── SYNC_SYSTEM.md           # Sync system documentation
+│   └── DOCKER_DEV.md            # Docker-in-Docker development guide
 │
 ├── package.json                 # Root monorepo configuration
 └── ...
@@ -553,6 +554,19 @@ cd apps/mobile && expo start
 
 #### Testing on Physical iPad/iPhone
 See the [iPad Testing Guide](./docs/IPAD_TESTING_GUIDE.md) for detailed instructions on testing the app on your physical device.
+
+#### Docker Development Environment
+The entire project can be developed inside a Docker container. See [Docker Development Guide](./docs/DOCKER_DEV.md) for setup, networking, and Expo Go troubleshooting.
+
+Quick start:
+```bash
+# Build and run
+docker build -t gametrack-dev .
+docker run -d --name gametrack-web -p 0.0.0.0:3000:3000 -p 0.0.0.0:8081:8081 gametrack-dev
+
+# Login to Expo (required for Expo Go)
+docker exec -it gametrack-web sh -c 'cd /app/apps/mobile && npx expo login'
+```
 
 Quick build for your device:
 ```bash
