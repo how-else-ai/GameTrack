@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   SyncClient,
   HttpClient,
-  SyncResponse,
   Kid,
   DeletedKid,
   SYNC_CONSTANTS,
@@ -29,80 +28,92 @@ const nativeHttpClient: HttpClient = {
 type SyncStatus = 'idle' | 'syncing' | 'error';
 
 export function useSync() {
+  // Store state — destructured for dependency tracking
+  const {
+    deviceId,
+    deviceName,
+    authToken,
+    kids,
+    pairedDevices,
+    deletedKids,
+    addPairedDevice,
+    removePairedDevice,
+    updateDeviceOnline,
+    mergeKidsData,
+    setDeletedKids,
+    triggerSyncFlash,
+    setAuthToken,
+  } = useAppStore();
+
   // Local state
   const [isConnected, setIsConnected] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
 
-  // Refs for intervals
+  // Refs for intervals and loop prevention
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const aggressivePollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastPollTimeRef = useRef<number>(0);
   const syncDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const isProcessingRef = useRef(false);
+  const lastSyncHashRef = useRef<string>('');
 
   // Sync client ref
   const syncClientRef = useRef<SyncClient | null>(null);
 
-  // Initialize sync client — getState reads fresh from store each call
+  // Initialize sync client — callbacks use store actions directly
   useEffect(() => {
     syncClientRef.current = new SyncClient(
       nativeHttpClient,
       {
         onKidsUpdate: (newKids, newDeleted) => {
-          useAppStore.getState().mergeKidsData(newKids);
-          useAppStore.getState().setDeletedKids(newDeleted);
+          mergeKidsData(newKids);
+          setDeletedKids(newDeleted);
+          triggerSyncFlash();
         },
         onSyncRequest: () => {
           // Handled by sync client
         },
         onUnpair: (deviceId) => {
-          useAppStore.getState().removePairedDevice(deviceId);
+          removePairedDevice(deviceId);
         },
         onError: (error) => {
           console.error('[SYNC] Error:', error);
           setSyncStatus('error');
         },
         onSyncFlash: () => {
-          useAppStore.getState().triggerSyncFlash();
+          triggerSyncFlash();
         },
       },
       {
-        // Always read fresh state from the store — avoids stale closure issue
-        // when Zustand persist middleware hasn't hydrated yet
+        // Always read fresh from store to handle async hydration
         getState: () => {
-          const state = useAppStore.getState();
+          const s = useAppStore.getState();
           return {
-            deviceId: state.deviceId,
-            deviceName: state.deviceName,
-            authToken: state.authToken || null,
-            kids: state.kids,
-            pairedDevices: state.pairedDevices,
-            deletedKids: state.deletedKids,
+            deviceId: s.deviceId,
+            deviceName: s.deviceName,
+            authToken: s.authToken || null,
+            kids: s.kids,
+            pairedDevices: s.pairedDevices,
+            deletedKids: s.deletedKids,
           };
         },
         setAuthToken: (token) => {
-          useAppStore.getState().setAuthToken(token);
+          setAuthToken(token);
           setIsRegistered(true);
           setIsConnected(true);
         },
-        addPairedDevice: (device) => {
-          useAppStore.getState().addPairedDevice(device);
-        },
-        removePairedDevice: (deviceId) => {
-          useAppStore.getState().removePairedDevice(deviceId);
-        },
-        updateDeviceOnline: (deviceId, isOnline) => {
-          useAppStore.getState().updateDeviceOnline(deviceId, isOnline);
-        },
+        addPairedDevice,
+        removePairedDevice,
+        updateDeviceOnline,
       }
     );
   }, []);
 
-  // Initialize sync when deviceId is available
+  // Initialize sync when deviceId becomes available (after store hydration)
   useEffect(() => {
-    const state = useAppStore.getState();
-    if (!state.deviceId || !syncClientRef.current) return;
+    if (!deviceId || !syncClientRef.current) return;
 
     let mounted = true;
 
@@ -113,12 +124,12 @@ export function useSync() {
 
       await client.heartbeat();
 
-      // Regular polling
+      // Regular polling every 2 seconds
       pollIntervalRef.current = setInterval(async () => {
         lastPollTimeRef.current = await client.poll(lastPollTimeRef.current);
       }, SYNC_CONSTANTS.POLL_INTERVAL);
 
-      // Heartbeat
+      // Heartbeat every 10 seconds
       heartbeatIntervalRef.current = setInterval(async () => {
         await client.heartbeat();
       }, SYNC_CONSTANTS.HEARTBEAT_INTERVAL);
@@ -126,38 +137,44 @@ export function useSync() {
       await client.fetchPairedDevices();
     };
 
+    console.log('[SYNC] Initializing with deviceId:', deviceId?.substring(0, 8));
     init();
 
     return () => {
       mounted = false;
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
       if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
-      if (syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
-      if (aggressivePollTimeoutRef.current) clearTimeout(aggressivePollTimeoutRef.current);
     };
-  }, []);
+  }, [deviceId]);
 
-  // Broadcast on kids change
-  useEffect(() => {
-    const state = useAppStore.getState();
-    if (!isConnected || state.pairedDevices.length === 0 || !syncClientRef.current) return;
+  // Broadcast on kids change — matches web app debounce pattern
+  const broadcastUpdate = useCallback((kidsData: Kid[]): void => {
+    if (pairedDevices.length === 0) return;
+    if (isProcessingRef.current) return;
 
-    const client = syncClientRef.current;
-    if (!client.shouldBroadcast(state.kids, state.deletedKids)) return;
+    const hash = JSON.stringify({ kids: kidsData, deleted: deletedKids });
+    if (hash === lastSyncHashRef.current) return;
+    lastSyncHashRef.current = hash;
 
-    // Debounce
     if (syncDebounceRef.current) {
       clearTimeout(syncDebounceRef.current);
     }
 
     syncDebounceRef.current = setTimeout(() => {
-      const freshState = useAppStore.getState();
-      client.pushEvent('KIDS_UPDATE', {
-        kids: freshState.kids,
-        deletedKids: freshState.deletedKids,
-      });
+      const state = useAppStore.getState();
+      if (!isProcessingRef.current && state.pairedDevices.length > 0 && syncClientRef.current) {
+        console.log('[SYNC] Broadcasting update:', state.kids.length, 'kids');
+        syncClientRef.current.pushEvent('KIDS_UPDATE', {
+          kids: state.kids,
+          deletedKids: state.deletedKids,
+        });
+      }
     }, SYNC_CONSTANTS.BROADCAST_DEBOUNCE);
-  }, [isConnected]);
+  }, [pairedDevices.length, deletedKids]);
+
+  useEffect(() => {
+    broadcastUpdate(kids);
+  }, [kids, broadcastUpdate]);
 
   // Public API
   const generatePairingToken = useCallback(async (): Promise<string | null> => {
@@ -178,10 +195,10 @@ export function useSync() {
   }, []);
 
   const requestFullSync = useCallback(async (): Promise<void> => {
-    const state = useAppStore.getState();
-    if (state.pairedDevices.length === 0 || !syncClientRef.current) return;
+    if (pairedDevices.length === 0 || !syncClientRef.current) return;
 
     setSyncStatus('syncing');
+    console.log('[SYNC] Requesting full sync');
 
     await syncClientRef.current.pushEvent('REQUEST_SYNC', {});
 
@@ -200,7 +217,7 @@ export function useSync() {
     };
 
     aggressivePoll();
-  }, []);
+  }, [pairedDevices.length]);
 
   const unpairDevice = useCallback(async (targetDeviceId: string): Promise<void> => {
     if (!syncClientRef.current) return;
