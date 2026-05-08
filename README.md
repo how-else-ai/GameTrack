@@ -55,12 +55,12 @@ Your children's data is private and remains under your control.
 
 ### Ticket System
 - **Customizable Limits**: Set 1-10 tickets per day per child
-- **Flexible Duration**: Configure 15-120 minutes per ticket
+- **Flexible Duration**: Configure 5-120 minutes per ticket
 - **Visual Ticket Display**: See available, in-use, and used tickets at a glance
 - **Daily Reset**: Tickets automatically refresh at midnight
 
 ### Timer Management
-- **Real-time Countdown**: Live timer updates every 250ms for smooth display
+- **Real-time Countdown**: Live timer updates every 250ms on web (250ms for smooth display) and every 1s on mobile (battery optimized)
 - **Pause/Resume**: Pause sessions without losing progress
 - **Warning Indicators**: Visual and audio alerts when time is running low
 - **Auto-End**: Sessions automatically end when time expires with audio notification
@@ -75,7 +75,7 @@ Your children's data is private and remains under your control.
 ### User Experience
 - **Retro 8-Bit Theme**: Pixel art avatars and nostalgic gaming aesthetic
 - **Multiple Avatar Categories**: Choose from Aliens, Kids, Adults, or Animals
-- **Smooth Animations**: Fluid transitions powered by Framer Motion
+- **Smooth Animations**: Fluid transitions powered by Framer Motion (web app)
 - **Mobile-First Design**: Optimized for touch interactions on phones and tablets
 
 ## 🛠 Technology Stack
@@ -89,7 +89,7 @@ Your children's data is private and remains under your control.
 ### Styling & UI
 - **Tailwind CSS 4** - Utility-first CSS framework
 - **shadcn/ui** - High-quality accessible components built on Radix UI
-- **Framer Motion** - Production-ready motion library
+- **Framer Motion** - Production-ready motion library (web app)
 - **Lucide React** - Beautiful icon library
 - **Press Start 2P** - Retro pixel font
 
@@ -98,7 +98,8 @@ Your children's data is private and remains under your control.
 - **Zustand Persist** - localStorage persistence middleware
 
 ### Sync & Networking
-- **html5-qrcode** - QR code scanning library
+- **html5-qrcode** - QR code scanning library (web app)
+- **expo-camera** - QR code scanning (mobile app)
 - **qrcode** - QR code generation
 - **Fetch API** - HTTP requests to sync server
 
@@ -174,7 +175,7 @@ Each kid has the following configurable properties:
 - `name`: Display name (max 20 characters)
 - `avatarEmoji`: Avatar ID (from 20 pixel art options)
 - `ticketLimit`: Number of daily tickets (1-10)
-- `ticketDuration`: Minutes per ticket (15-120)
+- `ticketDuration`: Minutes per ticket (5-120)
 
 ### Ticket Lifecycle
 
@@ -417,25 +418,24 @@ This is a monorepo containing both the web app and iOS mobile app:
 
 ```
 game-time-tracker/
+├── src/                       # 🌐 Next.js Web App
+│   ├── app/                   # Next.js App Router
+│   ├── components/            # React components
+│   ├── hooks/                 # Web hooks
+│   └── lib/                   # Core logic
+│
 ├── apps/
-│   ├── mobile/                  # 📱 iOS Expo App
-│   │   ├── src/
-│   │   │   ├── app/             # Expo Router screens
-│   │   │   ├── hooks/           # RN hooks (useSync, useTimer, useNotifications)
-│   │   │   └── lib/             # Notifications, storage, store
-│   │   ├── app.config.ts        # iOS/Android configuration
-│   │   ├── eas.json             # EAS build configuration
-│   │   └── package.json
-│   │
-│   └── web/                     # 🌐 Next.js Web App (existing)
-│       └── src/
-│           ├── app/             # Next.js App Router
-│           ├── components/      # React components
-│           ├── hooks/           # Web hooks
-│           └── lib/             # Core logic
+│   └── mobile/                # 📱 iOS Expo App
+│       ├── src/
+│       │   ├── app/           # Expo Router screens
+│       │   ├── hooks/         # RN hooks (useSync, useTimer, useNotifications)
+│       │   └── lib/           # Notifications, storage, store
+│       ├── app.config.ts      # iOS/Android configuration
+│       ├── eas.json           # EAS build configuration
+│       └── package.json
 │
 ├── packages/
-│   └── core/                    # 📦 Shared domain logic
+│   └── core/                  # 📦 Shared domain logic
 │       ├── src/
 │       │   ├── types.ts         # Shared TypeScript types
 │       │   ├── store.ts         # Platform-agnostic Zustand store

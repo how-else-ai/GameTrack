@@ -13,7 +13,7 @@ A native iOS app for the Game Time Tracker, built with Expo and React Native. Pr
 ## Tech Stack
 
 - **Framework**: [Expo](https://expo.dev/) ~55.0 (SDK 55)
-- **React Native**: 0.83.2
+- **React Native**: 0.83.6
 - **React**: 19.2.0
 - **Navigation**: [Expo Router](https://docs.expo.dev/router/introduction/) v55
 - **State Management**: [Zustand](https://github.com/pmndrs/zustand) with persistence
@@ -33,7 +33,6 @@ apps/mobile/
 │   │   ├── timer/[kidId].tsx   # Timer screen
 │   │   ├── add-kid.tsx         # Add kid form
 │   │   └── sync.tsx            # Device pairing screen
-│   ├── components/             # Shared components
 │   ├── hooks/                  # Custom hooks
 │   │   ├── useSync.ts          # Sync functionality
 │   │   ├── useTimer.ts         # Timer state
@@ -164,7 +163,7 @@ cd apps/mobile
 eas build --platform ios
 
 # Or for simulator
-eas build --platform ios --profile simulator
+eas build --platform ios --profile development-simulator
 ```
 
 ### Local Build

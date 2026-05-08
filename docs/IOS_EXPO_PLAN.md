@@ -21,8 +21,8 @@ Bring the existing Game Time Tracker to a native iOS app using Expo so the timer
 ```
 game-time-tracker/
 ├── apps/
-│   ├── mobile/              # Expo iOS/Android app
-│   └── web/                 # Next.js web app (existing)
+│   └── mobile/              # Expo iOS/Android app
+├── src/                       # Next.js web app (existing)
 ├── packages/
 │   └── core/                # Shared domain logic
 │       ├── src/

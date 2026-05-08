@@ -150,14 +150,13 @@ Applied exact colors from web app's `globals.css`:
 
 Some differences are intentional and unavoidable due to platform differences:
 
-1. **Avatars**: Mobile uses emoji fallback, web uses pixel art images
-2. **Fonts**: Mobile uses system fonts, web uses "Press Start 2P" pixel font
-3. **Navigation**: Mobile uses Stack navigation, web uses browser routing
-4. **Audio**: Mobile uses expo-av, web uses Web Audio API
-5. **Notifications**: Mobile uses expo-notifications, web uses browser notifications
-6. **Camera**: Mobile uses expo-camera, web uses html5-qrcode
-7. **Safe Areas**: Mobile has safe area handling for notches
-8. **Touch**: Mobile has tap feedback, web has hover states
+1. **Fonts**: Mobile uses Press Start 2P pixel font, web uses "Press Start 2P" pixel font
+2. **Navigation**: Mobile uses Stack navigation, web uses browser routing
+3. **Audio**: Mobile uses expo-av, web uses Web Audio API
+4. **Notifications**: Mobile uses expo-notifications, web uses browser notifications
+5. **Camera**: Mobile uses expo-camera, web uses html5-qrcode
+6. **Safe Areas**: Mobile has safe area handling for notches
+7. **Touch**: Mobile has tap feedback, web has hover states
 
 These differences are platform-appropriate and maintain the same look/feel/functionality.
 
@@ -171,14 +170,19 @@ These differences are platform-appropriate and maintain the same look/feel/funct
 6. Verify persistence across app restarts
 7. Test error states (no tickets, no network, etc.)
 
+## Completed Enhancements
+
+The following have been implemented:
+
+1. ✅ Pixel art images for avatars (replaced emoji)
+2. ✅ "Press Start 2P" font installed and applied
+
 ## Future Enhancements
 
 To further align with web app, consider:
 
-1. Add pixel art images for avatars (vs emoji)
-2. Install and use "Press Start 2P" font
-3. Add sound effects for button presses
-4. Add haptic feedback
-5. Add scanlines overlay effect
-6. Add CRT flicker effect
-7. Improve transitions between screens
+1. Add sound effects for button presses
+2. Add haptic feedback
+3. Add scanlines overlay effect
+4. Add CRT flicker effect
+5. Improve transitions between screens
