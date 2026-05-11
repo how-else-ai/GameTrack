@@ -50,6 +50,15 @@ export function useSync() {
   const [isRegistered, setIsRegistered] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
 
+  // Set connected immediately if we already have an auth token
+  const initAuthToken = useAppStore((state) => state.authToken);
+  useEffect(() => {
+    if (initAuthToken) {
+      setIsConnected(true);
+      setIsRegistered(true);
+    }
+  }, [initAuthToken]);
+
   // Refs for intervals and loop prevention
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -121,6 +130,10 @@ export function useSync() {
       const client = syncClientRef.current!;
       const success = await client.register();
       if (!success || !mounted) return;
+
+      // Mark connected — setAuthToken callback may not fire if token already existed
+      setIsConnected(true);
+      setIsRegistered(true);
 
       await client.heartbeat();
 

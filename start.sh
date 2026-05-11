@@ -12,9 +12,9 @@ bunx next dev -H 0.0.0.0 -p 3000 &
 NEXT_PID=$!
 sleep 5
 
-# Start Expo mobile dev server
+# Start Expo mobile dev server (--web for browser testing in DinD)
 cd apps/mobile
-EXPO_NO_DOTSLASH=1 bunx expo start --port 8081
+EXPO_NO_DOTSLASH=1 bunx expo start --web --port 8081 --
 
 # Wait for background process
 wait $NEXT_PID

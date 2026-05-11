@@ -150,7 +150,13 @@ export function useTimer(kidId: string) {
     };
   }, [kidId]);
 
-  return state;
+  return {
+    remainingSeconds: state.remainingSeconds,
+    remainingTime: state.remainingSeconds,
+    isWarning: state.isWarning,
+    isPaused: state.isPaused,
+    progress: state.progress,
+  };
 }
 
 export function useActiveTimers() {
