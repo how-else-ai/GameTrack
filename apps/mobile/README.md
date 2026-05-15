@@ -30,22 +30,43 @@ apps/mobile/
 │   ├── app/                    # Expo Router screens
 │   │   ├── _layout.tsx         # Root layout with providers
 │   │   ├── index.tsx           # Kids list screen
-│   │   ├── timer/[kidId].tsx   # Timer screen
+│   │   ├── timer/              # Timer screen (modular components)
+│   │   │   ├── [kidId].tsx     # Screen orchestrator (~274 lines)
+│   │   │   ├── TimerHeader.tsx # Header: avatar, name, notif toggle
+│   │   │   ├── TicketSelectionView.tsx  # Ticket grid + empty state
+│   │   │   └── ActiveSessionView.tsx    # Countdown, controls, progress
 │   │   ├── add-kid.tsx         # Add kid form
 │   │   └── sync.tsx            # Device pairing screen
 │   ├── hooks/                  # Custom hooks
-│   │   ├── useSync.ts          # Sync functionality
-│   │   ├── useTimer.ts         # Timer state
-│   │   └── useNotifications.ts # Notification management
+│   │   ├── useSync.ts          # Sync functionality (polling, heartbeat)
+│   │   ├── useTimer.ts         # Timer state (global tick, subscribers)
+│   │   ├── useNotifications.ts # Background notification scheduling
+│   │   └── useTimerNotifications.ts  # Timer screen: alarm, warning, permission
 │   └── lib/                    # Utilities
 │       ├── store.ts            # Zustand store instance
 │       ├── storage.ts          # AsyncStorage adapter
-│       └── notifications.ts    # Notification scheduling
+│       ├── notifications.ts    # Notification scheduling helpers
+│       └── ui-constants.ts     # Shared theme, avatars, formatTime
 ├── assets/                     # App icons, splash screen
 ├── app.config.ts               # Expo configuration
 ├── babel.config.js             # Babel with module resolver
 └── metro.config.js             # Metro with monorepo support
 ```
+
+### Timer Screen Architecture
+
+The timer screen is split into focused, single-responsibility components:
+
+| Component | Purpose | Lines | CC |
+|---|---|---|---|
+| `[kidId].tsx` | Screen orchestrator: wiring, state, modal | ~274 | ≤6 |
+| `TimerHeader.tsx` | Header: back button, avatar, notif toggle | ~107 | 4 |
+| `TicketSelectionView.tsx` | Ticket grid, avatar, no-tickets state | ~183 | 4 |
+| `ActiveSessionView.tsx` | Countdown, progress bar, pause/resume/end | ~271 | 4 |
+| `useTimerNotifications.ts` | Alarm, warning, permission management hook | ~62 | 4 |
+| `ui-constants.ts` | Shared theme, avatar map, time formatting | ~48 | 2 |
+
+All components target Cyclomatic Complexity ≤ 5. The orchestrator delegates rendering to sub-components and handles only state coordination and side effects.
 
 ## Getting Started
 
