@@ -167,6 +167,14 @@ src/app/page.tsx (Main Page)
 └── SyncManager (Pairing UI)
 ```
 
+### Code Quality Standards
+
+- **Cyclomatic Complexity ≤ 5** per function (target ≤ 3)
+- **Single Responsibility**: Each component handles one concern (display, input, or orchestration)
+- **No God Components**: Screen files delegate to focused sub-components
+- **Shared Utilities**: Theme colors, avatars, and formatting live in `ui-constants.ts`
+- **Hook Extraction**: Side-effect logic (notifications, timers, sync) lives in dedicated hooks
+
 ## 💡 Core Functionality
 
 ### Kid Management
@@ -487,19 +495,25 @@ apps/mobile/src/
 ├── app/                     # Expo Router screens
 │   ├── _layout.tsx          # Root layout with providers
 │   ├── index.tsx            # Kids list screen
-│   ├── timer/[kidId].tsx    # Timer screen
+│   ├── timer/               # Timer screen (modular components)
+│   │   ├── [kidId].tsx      # Screen orchestrator
+│   │   ├── TimerHeader.tsx  # Header with avatar + notif toggle
+│   │   ├── TicketSelectionView.tsx  # Ticket grid + empty state
+│   │   └── ActiveSessionView.tsx    # Countdown + controls
 │   ├── add-kid.tsx          # Add kid form
 │   └── sync.tsx             # Device pairing
 │
 ├── hooks/                   # React Native hooks
 │   ├── useSync.ts           # Sync functionality
-│   ├── useTimer.ts          # Timer state
-│   └── useNotifications.ts  # iOS notification management
+│   ├── useTimer.ts          # Timer state (global tick)
+│   ├── useNotifications.ts  # Background notification scheduling
+│   └── useTimerNotifications.ts  # Timer screen notification logic
 │
 └── lib/                     # Utilities
     ├── notifications.ts     # expo-notifications integration
     ├── storage.ts           # AsyncStorage adapter
-    └── store.ts             # Zustand store instance
+    ├── store.ts             # Zustand store instance
+    └── ui-constants.ts      # Shared theme, avatars, formatTime
 ```
 
 ## 🚀 Getting Started
