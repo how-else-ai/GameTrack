@@ -36,7 +36,12 @@ apps/mobile/
 │   │   │   ├── TicketSelectionView.tsx  # Ticket grid + empty state
 │   │   │   └── ActiveSessionView.tsx    # Countdown, controls, progress
 │   │   ├── add-kid.tsx         # Add kid form
-│   │   └── sync.tsx            # Device pairing screen
+│   │   ├── sync.tsx            # Sync screen orchestrator
+│   │   └── sync/               # Sync sub-components
+│   │       ├── SyncMenuView.tsx     # Menu: status, device info, paired
+│   │       ├── SyncGenerateView.tsx # QR code display
+│   │       └── SyncScanView.tsx     # Camera scanner + manual paste
+│   ├── hooks/                  # Custom hooks
 │   ├── hooks/                  # Custom hooks
 │   │   ├── useSync.ts          # Sync functionality (polling, heartbeat)
 │   │   ├── useTimer.ts         # Timer state (global tick, subscribers)

@@ -501,7 +501,11 @@ apps/mobile/src/
 │   │   ├── TicketSelectionView.tsx  # Ticket grid + empty state
 │   │   └── ActiveSessionView.tsx    # Countdown + controls
 │   ├── add-kid.tsx          # Add kid form
-│   └── sync.tsx             # Device pairing
+│   ├── sync.tsx             # Sync screen orchestrator
+│   └── sync/                # Sync sub-components
+│       ├── SyncMenuView.tsx     # Menu: status, device info, paired devices
+│       ├── SyncGenerateView.tsx # QR code display
+│       └── SyncScanView.tsx     # Camera scanner + manual paste
 │
 ├── hooks/                   # React Native hooks
 │   ├── useSync.ts           # Sync functionality
