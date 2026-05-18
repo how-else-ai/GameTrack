@@ -29,7 +29,15 @@ apps/mobile/
 ├── src/
 │   ├── app/                    # Expo Router screens
 │   │   ├── _layout.tsx         # Root layout with providers
-│   │   ├── index.tsx           # Kids list screen
+│   │   ├── index.tsx           # Home screen orchestrator
+│   │   ├── home/              # Home sub-components
+│   │   │   ├── HomeHeader.tsx           # Logo, sync status, pair link
+│   │   │   ├── KidCard.tsx              # Card shell with avatar, actions
+│   │   │   ├── ActiveSessionView.tsx    # Countdown, progress bar, warning
+│   │   │   ├── IdleTicketView.tsx       # Ticket dots, reset, play button
+│   │   │   ├── EmptyState.tsx           # No players message
+│   │   │   ├── DeleteConfirmation.tsx   # Delete modal
+│   │   │   └── HomeFooter.tsx           # Add Player button
 │   │   ├── timer/              # Timer screen (modular components)
 │   │   │   ├── [kidId].tsx     # Screen orchestrator (~274 lines)
 │   │   │   ├── TimerHeader.tsx # Header: avatar, name, notif toggle
