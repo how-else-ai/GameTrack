@@ -43,7 +43,15 @@ apps/mobile/
 │   │   │   ├── TimerHeader.tsx # Header: avatar, name, notif toggle
 │   │   │   ├── TicketSelectionView.tsx  # Ticket grid + empty state
 │   │   │   └── ActiveSessionView.tsx    # Countdown, controls, progress
-│   │   ├── add-kid.tsx         # Add kid form
+│   │   ├── add-kid.tsx         # Add kid screen orchestrator
+│   │   ├── add-kid/            # Add kid sub-components
+│   │   │   ├── AddKidHeader.tsx             # Back button + title
+│   │   │   ├── NameInput.tsx                # Name text field
+│   │   │   ├── CategorySelector.tsx         # Category buttons
+│   │   │   ├── AvatarGrid.tsx               # Avatar image grid
+│   │   │   ├── TicketLimitSlider.tsx        # Tickets per day slider
+│   │   │   ├── TicketDurationSlider.tsx     # Minutes per ticket slider
+│   │   │   └── SaveCancelButtons.tsx        # Cancel + Save buttons
 │   │   ├── sync.tsx            # Sync screen orchestrator
 │   │   └── sync/               # Sync sub-components
 │   │       ├── SyncMenuView.tsx     # Menu: status, device info, paired
